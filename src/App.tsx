@@ -8,6 +8,8 @@ import NotFound from "./pages/NotFound";
 import NotesHub from "./pages/NotesHub";
 import Events from "./pages/Events";
 import Community from "./pages/Community";
+import Mentors from "./pages/Mentors";
+import Dashboard from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +24,8 @@ const App = () => (
           <Route path="/notes" element={<NotesHub />} />
           <Route path="/events" element={<Events />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/mentors" element={<Mentors />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
