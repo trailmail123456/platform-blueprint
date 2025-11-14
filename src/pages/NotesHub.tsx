@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Header } from "@/components/layout/Header";
+import { ScrollReveal } from "@/components/animations/ScrollReveal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -34,20 +36,8 @@ const NotesHub = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <BookOpen className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Notes Hub</h1>
-          </div>
-          <Button variant="hero" size="sm">
-            <Upload className="mr-2 h-4 w-4" />
-            Upload Notes
-          </Button>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-accent/5">
+      <Header />
 
       <div className="container mx-auto px-4 py-8">
         {/* Search and Filters */}
@@ -129,12 +119,10 @@ const NotesHub = () => {
               : "space-y-4"
           }
         >
-          {filteredNotes.map((note) => (
-            <Card
-              key={note.id}
-              className="card-hover overflow-hidden transition-all animate-fade-in"
-            >
-              <CardHeader className="pb-3">
+          {filteredNotes.map((note, index) => (
+            <ScrollReveal key={note.id} delay={index * 0.05} direction="scale">
+              <Card className="card-hover overflow-hidden transition-all bg-card/50 backdrop-blur-sm">
+                <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="font-semibold line-clamp-2">{note.title}</h3>
@@ -184,7 +172,8 @@ const NotesHub = () => {
                   </Button>
                 </div>
               </CardFooter>
-            </Card>
+              </Card>
+            </ScrollReveal>
           ))}
         </div>
 

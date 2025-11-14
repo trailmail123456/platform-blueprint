@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Header } from "@/components/layout/Header";
+import { ScrollReveal } from "@/components/animations/ScrollReveal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -54,20 +56,8 @@ const Community = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <MessageSquare className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Community Forum</h1>
-          </div>
-          <Button variant="hero" size="sm">
-            <Sparkles className="mr-2 h-4 w-4" />
-            New Thread
-          </Button>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-accent/5">
+      <Header />
 
       <div className="container mx-auto px-4 py-8">
         {/* Stats Bar */}
