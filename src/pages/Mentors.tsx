@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { BookingModal } from "@/components/BookingModal";
 import {
   Users,
   Star,
@@ -24,12 +25,16 @@ import {
   Globe,
 } from "lucide-react";
 import { mockMentors, mockTimeSlots } from "@/lib/mockMentorData";
+import type { Mentor } from "@/lib/mockMentorData";
 
 const Mentors = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedExpertise, setSelectedExpertise] = useState<string | null>(null);
   const [selectedMentor, setSelectedMentor] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [mentorToBook, setMentorToBook] = useState<Mentor | null>(null);
 
   const allExpertise = Array.from(
     new Set(mockMentors.flatMap((m) => m.expertise))
@@ -63,6 +68,12 @@ const Mentors = () => {
           slot.date === selectedDate?.toISOString().split("T")[0]
       )
     : [];
+
+  const handleBookSession = (mentor: Mentor, time: string) => {
+    setMentorToBook(mentor);
+    setSelectedTime(time);
+    setBookingModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-accent/5">
@@ -308,6 +319,7 @@ const Mentors = () => {
                                   variant="outline"
                                   size="sm"
                                   className="w-full"
+                                  onClick={() => handleBookSession(mentor, slot.time)}
                                 >
                                   {slot.time}
                                 </Button>
@@ -319,11 +331,6 @@ const Mentors = () => {
                             )}
                           </div>
                         </div>
-
-                        <Button variant="hero" className="w-full" size="lg">
-                          <Video className="mr-2 h-4 w-4" />
-                          Confirm Booking
-                        </Button>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -347,6 +354,15 @@ const Mentors = () => {
           </ScrollReveal>
         )}
       </div>
+
+      {/* Booking Modal */}
+      <BookingModal
+        open={bookingModalOpen}
+        onOpenChange={setBookingModalOpen}
+        mentor={mentorToBook}
+        selectedDate={selectedDate}
+        selectedTime={selectedTime}
+      />
     </div>
   );
 };
