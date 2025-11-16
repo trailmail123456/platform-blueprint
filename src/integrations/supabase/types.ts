@@ -14,7 +14,233 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      annotations: {
+        Row: {
+          color: string | null
+          comment: string | null
+          created_at: string
+          id: string
+          note_id: string
+          page_number: number
+          position: Json
+          text_content: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          note_id: string
+          page_number: number
+          position: Json
+          text_content?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          note_id?: string
+          page_number?: number
+          position?: Json
+          text_content?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annotations_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          branch: string | null
+          content_url: string
+          created_at: string
+          description: string | null
+          downloads: number | null
+          id: string
+          rating: number | null
+          semester: number | null
+          subject: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+          views: number | null
+        }
+        Insert: {
+          branch?: string | null
+          content_url: string
+          created_at?: string
+          description?: string | null
+          downloads?: number | null
+          id?: string
+          rating?: number | null
+          semester?: number | null
+          subject: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+          views?: number | null
+        }
+        Update: {
+          branch?: string | null
+          content_url?: string
+          created_at?: string
+          description?: string | null
+          downloads?: number | null
+          id?: string
+          rating?: number | null
+          semester?: number | null
+          subject?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          views?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      session_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_sessions: {
+        Row: {
+          created_at: string
+          current_page: number | null
+          host_id: string
+          id: string
+          is_active: boolean | null
+          note_id: string
+          session_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_page?: number | null
+          host_id: string
+          id?: string
+          is_active?: boolean | null
+          note_id: string
+          session_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_page?: number | null
+          host_id?: string
+          id?: string
+          is_active?: boolean | null
+          note_id?: string
+          session_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
