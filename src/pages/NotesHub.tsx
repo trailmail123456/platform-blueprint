@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { ScrollReveal } from "@/components/animations/ScrollReveal";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -17,17 +20,80 @@ import {
   Grid3x3,
   List,
   X,
+  Users,
+  Plus,
 } from "lucide-react";
 import { mockNotes } from "@/lib/mockData";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const NotesHub = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [sessionName, setSessionName] = useState("");
+  const [selectedNote, setSelectedNote] = useState<any>(null);
+  const [showSessionDialog, setShowSessionDialog] = useState(false);
 
-  const subjects = Array.from(new Set(mockNotes.map((note) => note.subject)));
+  useEffect(() => {
+    loadNotes();
+  }, []);
 
-  const filteredNotes = mockNotes.filter((note) => {
+  const loadNotes = async () => {
+    const { data } = await supabase.from("notes").select("*").order("created_at", { ascending: false });
+    if (data) {
+      setNotes(data);
+    } else {
+      setNotes(mockNotes);
+    }
+  };
+
+  const createStudySession = async () => {
+    if (!user) {
+      toast.error("Please sign in to create a study session");
+      navigate("/auth");
+      return;
+    }
+
+    if (!sessionName.trim()) {
+      toast.error("Please enter a session name");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("study_sessions")
+      .insert({
+        note_id: selectedNote.id,
+        host_id: user.id,
+        session_name: sessionName,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast.error("Failed to create session");
+    } else {
+      toast.success("Study session created!");
+      setShowSessionDialog(false);
+      setSessionName("");
+      navigate(`/study-session/${data.id}`);
+    }
+  };
+
+  const subjects = Array.from(new Set(notes.map((note) => note.subject)));
+
+  const filteredNotes = notes.filter((note) => {
     const matchesSearch =
       note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       note.subject.toLowerCase().includes(searchQuery.toLowerCase());
@@ -71,6 +137,12 @@ const NotesHub = () => {
                 <Filter className="mr-2 h-4 w-4" />
                 Filters
               </Button>
+              {user && (
+                <Button onClick={() => navigate("/auth")} variant="default" size="sm">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Note
+                </Button>
+              )}
             </div>
           </div>
 
@@ -170,6 +242,41 @@ const NotesHub = () => {
                     <Download className="mr-2 h-4 w-4" />
                     Download
                   </Button>
+                  <Dialog open={showSessionDialog} onOpenChange={setShowSessionDialog}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setSelectedNote(note)}
+                      >
+                        <Users className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create Study Session</DialogTitle>
+                        <DialogDescription>
+                          Start a collaborative study session for {note.title}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium">Session Name</label>
+                          <Input
+                            placeholder="e.g., Final Exam Prep"
+                            value={sessionName}
+                            onChange={(e) => setSessionName(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button onClick={createStudySession}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create Session
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardFooter>
               </Card>
