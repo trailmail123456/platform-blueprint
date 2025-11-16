@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import NotesHub from "./pages/NotesHub";
+import Auth from "./pages/Auth";
+import StudySession from "./pages/StudySession";
 import Events from "./pages/Events";
 import Community from "./pages/Community";
 import Mentors from "./pages/Mentors";
@@ -39,7 +41,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/notes" element={<NotesHub />} />
+          <Route path="/study-session/:sessionId" element={<StudySession />} />
           <Route path="/events" element={<Events />} />
           <Route path="/community" element={<Community />} />
           <Route path="/mentors" element={<Mentors />} />
