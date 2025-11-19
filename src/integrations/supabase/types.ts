@@ -93,6 +93,107 @@ export type Database = {
           },
         ]
       }
+      collection_notes: {
+        Row: {
+          added_at: string
+          collection_id: string
+          id: string
+          note_id: string
+        }
+        Insert: {
+          added_at?: string
+          collection_id: string
+          id?: string
+          note_id: string
+        }
+        Update: {
+          added_at?: string
+          collection_id?: string
+          id?: string
+          note_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_notes_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_notes_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      note_ai_content: {
+        Row: {
+          flashcards: Json | null
+          generated_at: string
+          id: string
+          note_id: string
+          quiz_data: Json | null
+          related_notes: string[] | null
+          summary: string | null
+        }
+        Insert: {
+          flashcards?: Json | null
+          generated_at?: string
+          id?: string
+          note_id: string
+          quiz_data?: Json | null
+          related_notes?: string[] | null
+          summary?: string | null
+        }
+        Update: {
+          flashcards?: Json | null
+          generated_at?: string
+          id?: string
+          note_id?: string
+          quiz_data?: Json | null
+          related_notes?: string[] | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_ai_content_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: true
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           branch: string | null
@@ -101,8 +202,10 @@ export type Database = {
           description: string | null
           downloads: number | null
           id: string
+          last_viewed_at: string | null
           rating: number | null
           semester: number | null
+          study_time_minutes: number | null
           subject: string
           tags: string[] | null
           title: string
@@ -117,8 +220,10 @@ export type Database = {
           description?: string | null
           downloads?: number | null
           id?: string
+          last_viewed_at?: string | null
           rating?: number | null
           semester?: number | null
+          study_time_minutes?: number | null
           subject: string
           tags?: string[] | null
           title: string
@@ -133,8 +238,10 @@ export type Database = {
           description?: string | null
           downloads?: number | null
           id?: string
+          last_viewed_at?: string | null
           rating?: number | null
           semester?: number | null
+          study_time_minutes?: number | null
           subject?: string
           tags?: string[] | null
           title?: string

@@ -22,6 +22,7 @@ import {
   X,
   Users,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import { mockNotes } from "@/lib/mockData";
 import { toast } from "sonner";
@@ -36,6 +37,8 @@ import {
 } from "@/components/ui/dialog";
 import { NoteUploadDialog } from "@/components/NoteUploadDialog";
 import { NotePreviewer } from "@/components/NotePreviewer";
+import { BatchUploadDialog } from "@/components/BatchUploadDialog";
+import { NoteAIFeatures } from "@/components/NoteAIFeatures";
 
 const NotesHub = () => {
   const navigate = useNavigate();
@@ -50,6 +53,9 @@ const NotesHub = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [previewNote, setPreviewNote] = useState<any>(null);
+  const [showBatchUpload, setShowBatchUpload] = useState(false);
+  const [showAIFeatures, setShowAIFeatures] = useState(false);
+  const [aiNote, setAiNote] = useState<any>(null);
 
   useEffect(() => {
     loadNotes();
@@ -143,10 +149,16 @@ const NotesHub = () => {
                 Filters
               </Button>
               {user && (
-                <Button onClick={() => setShowUploadDialog(true)} variant="default" size="sm">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Note
-                </Button>
+                <>
+                  <Button onClick={() => setShowUploadDialog(true)} variant="default" size="sm">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Note
+                  </Button>
+                  <Button onClick={() => setShowBatchUpload(true)} variant="secondary" size="sm">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Batch Upload
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -271,41 +283,26 @@ const NotesHub = () => {
                     <Download className="mr-2 h-4 w-4" />
                     Download
                   </Button>
-                  <Dialog open={showSessionDialog} onOpenChange={setShowSessionDialog}>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setSelectedNote(note)}
-                      >
-                        <Users className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Create Study Session</DialogTitle>
-                        <DialogDescription>
-                          Start a collaborative study session for {note.title}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-sm font-medium">Session Name</label>
-                          <Input
-                            placeholder="e.g., Final Exam Prep"
-                            value={sessionName}
-                            onChange={(e) => setSessionName(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button onClick={createStudySession}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Create Session
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setAiNote(note);
+                      setShowAIFeatures(true);
+                    }}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedNote(note);
+                      setShowSessionDialog(true);
+                    }}
+                  >
+                    <Users className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardFooter>
               </Card>
@@ -343,6 +340,48 @@ const NotesHub = () => {
         onOpenChange={setShowPreviewDialog}
         note={previewNote}
       />
+
+      <BatchUploadDialog
+        open={showBatchUpload}
+        onOpenChange={setShowBatchUpload}
+        onSuccess={loadNotes}
+      />
+
+      <Dialog open={showAIFeatures} onOpenChange={setShowAIFeatures}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{aiNote?.title} - AI Features</DialogTitle>
+          </DialogHeader>
+          {aiNote && <NoteAIFeatures noteId={aiNote.id} noteTitle={aiNote.title} />}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showSessionDialog} onOpenChange={setShowSessionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Study Session</DialogTitle>
+            <DialogDescription>
+              Start a collaborative study session for {selectedNote?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Session Name</label>
+              <Input
+                placeholder="e.g., Final Exam Prep"
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={createStudySession}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Session
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
