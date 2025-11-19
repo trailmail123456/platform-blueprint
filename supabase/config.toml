@@ -1,1 +1,4 @@
 project_id = "ckmjdtelqniqfnssrfta"
+
+[functions.enhance-pdf]
+verify_jwt = false

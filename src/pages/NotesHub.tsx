@@ -34,6 +34,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { NoteUploadDialog } from "@/components/NoteUploadDialog";
+import { NotePreviewer } from "@/components/NotePreviewer";
 
 const NotesHub = () => {
   const navigate = useNavigate();
@@ -45,6 +47,9 @@ const NotesHub = () => {
   const [sessionName, setSessionName] = useState("");
   const [selectedNote, setSelectedNote] = useState<any>(null);
   const [showSessionDialog, setShowSessionDialog] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewNote, setPreviewNote] = useState<any>(null);
 
   useEffect(() => {
     loadNotes();
@@ -138,7 +143,7 @@ const NotesHub = () => {
                 Filters
               </Button>
               {user && (
-                <Button onClick={() => navigate("/auth")} variant="default" size="sm">
+                <Button onClick={() => setShowUploadDialog(true)} variant="default" size="sm">
                   <Upload className="mr-2 h-4 w-4" />
                   Upload Note
                 </Button>
@@ -234,11 +239,35 @@ const NotesHub = () => {
               </CardContent>
               <CardFooter className="pt-3">
                 <div className="flex w-full gap-2">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => {
+                      setPreviewNote(note);
+                      setShowPreviewDialog(true);
+                    }}
+                  >
                     <Eye className="mr-2 h-4 w-4" />
                     Preview
                   </Button>
-                  <Button variant="default" size="sm" className="flex-1">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1"
+                    onClick={async () => {
+                      const response = await fetch(note.content_url);
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${note.title}.pdf`;
+                      document.body.appendChild(a);
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                      document.body.removeChild(a);
+                    }}
+                  >
                     <Download className="mr-2 h-4 w-4" />
                     Download
                   </Button>
@@ -302,6 +331,18 @@ const NotesHub = () => {
           </div>
         )}
       </div>
+
+      <NoteUploadDialog
+        open={showUploadDialog}
+        onOpenChange={setShowUploadDialog}
+        onSuccess={loadNotes}
+      />
+
+      <NotePreviewer
+        open={showPreviewDialog}
+        onOpenChange={setShowPreviewDialog}
+        note={previewNote}
+      />
     </div>
   );
 };
