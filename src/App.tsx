@@ -34,6 +34,18 @@ import Flashcards from "./pages/Flashcards";
 import RoomRentals from "./pages/RoomRentals";
 import FoodServices from "./pages/FoodServices";
 import Transport from "./pages/Transport";
+import Roadmaps from "./pages/Roadmaps";
+import Forum from "./pages/Forum";
+import Sessions from "./pages/Sessions";
+import TechVault from "./pages/TechVault";
+import SkillSwap from "./pages/SkillSwap";
+import CreatorsZone from "./pages/CreatorsZone";
+import AdminPanel from "./pages/AdminPanel";
+import DailyHacks from "./pages/DailyHacks";
+import PostSkill from "./pages/PostSkill";
+import Hostels from "./pages/Hostels";
+import Repair from "./pages/Repair";
+import Shopping from "./pages/Shopping";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +86,18 @@ const App = () => (
           <Route path="/qa-board" element={<QABoard />} />
           <Route path="/gamification" element={<Gamification />} />
           <Route path="/virtual-classroom" element={<VirtualClassroom />} />
+          <Route path="/roadmaps" element={<Roadmaps />} />
+          <Route path="/forum" element={<Forum />} />
+          <Route path="/sessions" element={<Sessions />} />
+          <Route path="/tech-vault" element={<TechVault />} />
+          <Route path="/skill-swap" element={<SkillSwap />} />
+          <Route path="/creators" element={<CreatorsZone />} />
+          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/daily-hacks" element={<DailyHacks />} />
+          <Route path="/post-skill" element={<PostSkill />} />
+          <Route path="/hostels" element={<Hostels />} />
+          <Route path="/repair" element={<Repair />} />
+          <Route path="/shopping" element={<Shopping />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
