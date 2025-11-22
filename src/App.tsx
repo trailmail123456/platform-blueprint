@@ -9,6 +9,9 @@ import NotesHub from "./pages/NotesHub";
 import Auth from "./pages/Auth";
 import StudySession from "./pages/StudySession";
 import Analytics from "./pages/Analytics";
+import QABoard from "./pages/QABoard";
+import Gamification from "./pages/Gamification";
+import VirtualClassroom from "./pages/VirtualClassroom";
 import Events from "./pages/Events";
 import Community from "./pages/Community";
 import Mentors from "./pages/Mentors";
@@ -68,6 +71,9 @@ const App = () => (
           <Route path="/room-rentals" element={<RoomRentals />} />
           <Route path="/food" element={<FoodServices />} />
           <Route path="/transport" element={<Transport />} />
+          <Route path="/qa-board" element={<QABoard />} />
+          <Route path="/gamification" element={<Gamification />} />
+          <Route path="/virtual-classroom" element={<VirtualClassroom />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
