@@ -5,6 +5,7 @@ import { ScrollReveal } from "@/components/animations/ScrollReveal";
 import { ParallaxSection } from "@/components/animations/ParallaxSection";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { OnboardingModal } from "@/components/OnboardingModal";
 import {
   BookOpen,
   Calendar,
@@ -26,6 +27,10 @@ const Index = () => {
   useEffect(() => {
     setIsLoaded(true);
   }, []);
+
+  const handleOnboardingComplete = (preferences: any) => {
+    console.log("Onboarding completed with preferences:", preferences);
+  };
 
   const features = [
     {
@@ -82,6 +87,7 @@ const Index = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
       </div>
       
+      <OnboardingModal onComplete={handleOnboardingComplete} />
       <Header />
 
       {/* Hero Section */}
