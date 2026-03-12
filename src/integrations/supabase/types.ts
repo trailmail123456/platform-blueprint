@@ -61,6 +61,121 @@ export type Database = {
           },
         ]
       }
+      brainstorm_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_mentor_message: boolean | null
+          message_type: string | null
+          room_id: string
+          upvotes: number | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_mentor_message?: boolean | null
+          message_type?: string | null
+          room_id: string
+          upvotes?: number | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_mentor_message?: boolean | null
+          message_type?: string | null
+          room_id?: string
+          upvotes?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brainstorm_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "brainstorm_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brainstorm_participants: {
+        Row: {
+          id: string
+          is_mentor: boolean | null
+          joined_at: string | null
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_mentor?: boolean | null
+          joined_at?: string | null
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_mentor?: boolean | null
+          joined_at?: string | null
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brainstorm_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "brainstorm_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brainstorm_rooms: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          mentor_led: boolean | null
+          name: string
+          participant_count: number | null
+          topic: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          mentor_led?: boolean | null
+          name: string
+          participant_count?: number | null
+          topic: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          mentor_led?: boolean | null
+          name?: string
+          participant_count?: number | null
+          topic?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
