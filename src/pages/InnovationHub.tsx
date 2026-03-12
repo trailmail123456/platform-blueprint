@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, Rocket, Heart, MessageSquare, Share2, Sparkles, Trophy } from "lucide-react";
+import { Lightbulb, Rocket, Heart, MessageSquare, Share2, Sparkles, Trophy, RefreshCw } from "lucide-react";
 import { BrainstormRooms } from "@/components/innovation/BrainstormRooms";
 import { InnovationLeaderboard } from "@/components/innovation/InnovationLeaderboard";
+import { FeedbackCircles } from "@/components/innovation/FeedbackCircles";
 
 const mockIdeas = [
   {
