@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lightbulb, Rocket, Heart, MessageSquare, Share2, Sparkles, Trophy } from "lucide-react";
+import { Lightbulb, Rocket, Heart, MessageSquare, Share2, Sparkles, Trophy, RefreshCw } from "lucide-react";
 import { BrainstormRooms } from "@/components/innovation/BrainstormRooms";
 import { InnovationLeaderboard } from "@/components/innovation/InnovationLeaderboard";
+import { FeedbackCircles } from "@/components/innovation/FeedbackCircles";
 
 const mockIdeas = [
   {
@@ -81,12 +82,15 @@ const InnovationHub = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="ideas" className="gap-2">
               <Lightbulb className="h-4 w-4" /> Ideas
             </TabsTrigger>
             <TabsTrigger value="brainstorm" className="gap-2">
               <Sparkles className="h-4 w-4" /> Brainstorm
+            </TabsTrigger>
+            <TabsTrigger value="circles" className="gap-2">
+              <RefreshCw className="h-4 w-4" /> Circles
             </TabsTrigger>
             <TabsTrigger value="leaderboard" className="gap-2">
               <Trophy className="h-4 w-4" /> Leaderboard
@@ -132,6 +136,10 @@ const InnovationHub = () => {
 
           <TabsContent value="brainstorm">
             <BrainstormRooms />
+          </TabsContent>
+
+          <TabsContent value="circles">
+            <FeedbackCircles />
           </TabsContent>
 
           <TabsContent value="leaderboard">

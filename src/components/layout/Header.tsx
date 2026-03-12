@@ -17,9 +17,9 @@ const navigationGroups = [
     title: "Academic & Career",
     items: [
       { title: "Notes Hub", href: "/notes", desc: "Share and access study materials" },
-      { title: "Resume Builder", href: "/resume", desc: "ATS-optimized resume tips" },
-      { title: "College Insights", href: "/colleges", desc: "Reviews and comparisons" },
-      { title: "Innovation Hub", href: "/innovation", desc: "Startup ideas and pitches" },
+      { title: "Resume Builder", href: "/resume-builder", desc: "ATS-optimized resume tips" },
+      { title: "College Insights", href: "/college-insights", desc: "Reviews and comparisons" },
+      { title: "Innovation Hub", href: "/innovation-hub", desc: "Startup ideas and pitches" },
       { title: "Events & Hackathons", href: "/events", desc: "Competitions and workshops" },
       { title: "Scholarships", href: "/scholarships", desc: "Find funding opportunities" },
       { title: "Courses & Internships", href: "/courses", desc: "Learning resources" },
@@ -36,33 +36,35 @@ const navigationGroups = [
       { title: "Quiz & Tests", href: "/quiz", desc: "Mock exams and practice" },
       { title: "Skill Zone", href: "/skills", desc: "Video courses and certifications" },
       { title: "Tech News", href: "/news", desc: "Latest AI and tech updates" },
-      { title: "Virtual Classroom", href: "/classroom", desc: "Live learning sessions" },
+      { title: "Virtual Classroom", href: "/virtual-classroom", desc: "Live learning sessions" },
+      { title: "Flashcards", href: "/flashcards", desc: "Spaced repetition study" },
     ],
   },
   {
     title: "Collaboration",
     items: [
-      { title: "Study Groups", href: "/groups", desc: "Virtual study rooms" },
-      { title: "Project Teams", href: "/projects", desc: "Find collaborators" },
-      { title: "Tech Vault", href: "/vault", desc: "Code snippets and docs" },
+      { title: "Study Groups", href: "/study-groups", desc: "Virtual study rooms" },
+      { title: "Team Hunt", href: "/team-hunt", desc: "Find collaborators" },
+      { title: "Tech Vault", href: "/tech-vault", desc: "Code snippets and docs" },
       { title: "Skill Swap", href: "/skill-swap", desc: "Exchange knowledge" },
       { title: "Creators Zone", href: "/creators", desc: "Content platform" },
-      { title: "Q&A Board", href: "/qa", desc: "Stack Overflow style" },
+      { title: "Q&A Board", href: "/qa-board", desc: "Stack Overflow style" },
+      { title: "Forum", href: "/forum", desc: "Discussion threads" },
     ],
   },
   {
     title: "Engagement",
     items: [
-      { title: "Daily Hacks", href: "/hacks", desc: "Tips and showcases" },
-      { title: "Gamification", href: "/achievements", desc: "Points and badges" },
+      { title: "Daily Hacks", href: "/daily-hacks", desc: "Tips and showcases" },
+      { title: "Gamification", href: "/gamification", desc: "Points and badges" },
       { title: "Wellness Tracker", href: "/wellness", desc: "Mental health support" },
-      { title: "Flash Cards", href: "/flashcards", desc: "Spaced repetition" },
+      { title: "Sessions", href: "/sessions", desc: "Study & mentoring sessions" },
     ],
   },
   {
     title: "Local Services",
     items: [
-      { title: "Room Rentals", href: "/rooms", desc: "Find accommodation" },
+      { title: "Room Rentals", href: "/room-rentals", desc: "Find accommodation" },
       { title: "Hostel Info", href: "/hostels", desc: "Campus housing" },
       { title: "Food & Restaurants", href: "/food", desc: "Student discounts" },
       { title: "Transport", href: "/transport", desc: "Bus routes and shuttles" },
@@ -73,9 +75,11 @@ const navigationGroups = [
   {
     title: "More",
     items: [
-      { title: "Post Your Skill", href: "/services", desc: "Freelance services" },
-      { title: "Find Roommate", href: "/roommates", desc: "Connect with peers" },
+      { title: "Post Your Skill", href: "/post-skill", desc: "Freelance services" },
+      { title: "Find Roommate", href: "/roommate-finder", desc: "Connect with peers" },
       { title: "Dashboard", href: "/dashboard", desc: "Your personal hub" },
+      { title: "Analytics", href: "/analytics", desc: "Your study stats" },
+      { title: "Admin Panel", href: "/admin", desc: "Platform management" },
     ],
   },
 ];
@@ -137,12 +141,16 @@ export const Header = () => {
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="hidden md:inline-flex">
-            Sign In
-          </Button>
-          <Button variant="hero" size="sm" className="hidden md:inline-flex">
-            Get Started
-          </Button>
+          <Link to="/auth">
+            <Button variant="ghost" size="sm" className="hidden md:inline-flex">
+              Sign In
+            </Button>
+          </Link>
+          <Link to="/auth">
+            <Button variant="hero" size="sm" className="hidden md:inline-flex">
+              Get Started
+            </Button>
+          </Link>
           
           {/* Mobile Menu Button */}
           <Button
@@ -189,12 +197,12 @@ export const Header = () => {
               </div>
             ))}
             <div className="flex flex-col gap-2 pt-4 border-t border-border/40">
-              <Button variant="outline" className="w-full">
-                Sign In
-              </Button>
-              <Button variant="hero" className="w-full">
-                Get Started
-              </Button>
+              <Link to="/auth">
+                <Button variant="outline" className="w-full">Sign In</Button>
+              </Link>
+              <Link to="/auth">
+                <Button variant="hero" className="w-full">Get Started</Button>
+              </Link>
             </div>
           </div>
         </div>
