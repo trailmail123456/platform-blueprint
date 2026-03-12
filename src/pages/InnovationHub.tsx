@@ -82,12 +82,15 @@ const InnovationHub = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="ideas" className="gap-2">
               <Lightbulb className="h-4 w-4" /> Ideas
             </TabsTrigger>
             <TabsTrigger value="brainstorm" className="gap-2">
               <Sparkles className="h-4 w-4" /> Brainstorm
+            </TabsTrigger>
+            <TabsTrigger value="circles" className="gap-2">
+              <RefreshCw className="h-4 w-4" /> Circles
             </TabsTrigger>
             <TabsTrigger value="leaderboard" className="gap-2">
               <Trophy className="h-4 w-4" /> Leaderboard
