@@ -138,6 +138,10 @@ const InnovationHub = () => {
             <BrainstormRooms />
           </TabsContent>
 
+          <TabsContent value="circles">
+            <FeedbackCircles />
+          </TabsContent>
+
           <TabsContent value="leaderboard">
             <InnovationLeaderboard />
           </TabsContent>
