@@ -14,6 +14,130 @@ export type Database = {
   }
   public: {
     Tables: {
+      ama_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ama_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ama_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ama_questions: {
+        Row: {
+          answer: string | null
+          created_at: string
+          id: string
+          is_answered: boolean | null
+          is_pinned: boolean | null
+          question: string
+          session_id: string
+          updated_at: string
+          upvotes: number | null
+          user_id: string
+        }
+        Insert: {
+          answer?: string | null
+          created_at?: string
+          id?: string
+          is_answered?: boolean | null
+          is_pinned?: boolean | null
+          question: string
+          session_id: string
+          updated_at?: string
+          upvotes?: number | null
+          user_id: string
+        }
+        Update: {
+          answer?: string | null
+          created_at?: string
+          id?: string
+          is_answered?: boolean | null
+          is_pinned?: boolean | null
+          question?: string
+          session_id?: string
+          updated_at?: string
+          upvotes?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ama_questions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ama_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ama_sessions: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          id: string
+          is_active: boolean | null
+          max_participants: number | null
+          mentor_id: string
+          participant_count: number | null
+          scheduled_at: string
+          status: string
+          title: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean | null
+          max_participants?: number | null
+          mentor_id: string
+          participant_count?: number | null
+          scheduled_at: string
+          status?: string
+          title: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean | null
+          max_participants?: number | null
+          mentor_id?: string
+          participant_count?: number | null
+          scheduled_at?: string
+          status?: string
+          title?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       annotations: {
         Row: {
           color: string | null
