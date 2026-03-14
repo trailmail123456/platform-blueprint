@@ -46,7 +46,7 @@ import PostSkill from "./pages/PostSkill";
 import Hostels from "./pages/Hostels";
 import Repair from "./pages/Repair";
 import Shopping from "./pages/Shopping";
-
+import FoundersPassport from "./pages/FoundersPassport";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -98,6 +98,7 @@ const App = () => (
           <Route path="/hostels" element={<Hostels />} />
           <Route path="/repair" element={<Repair />} />
           <Route path="/shopping" element={<Shopping />} />
+          <Route path="/founders-passport" element={<FoundersPassport />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
