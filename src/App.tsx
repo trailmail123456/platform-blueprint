@@ -46,7 +46,7 @@ import PostSkill from "./pages/PostSkill";
 import Hostels from "./pages/Hostels";
 import Repair from "./pages/Repair";
 import Shopping from "./pages/Shopping";
-
+import FoundersPassport from "./pages/FoundersPassport";
 const queryClient = new QueryClient();
 
 const App = () => (
