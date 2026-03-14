@@ -9,7 +9,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingModal } from "@/components/BookingModal";
+import { MentorAMA } from "@/components/mentors/MentorAMA";
 import {
   Users,
   Star,
@@ -23,6 +25,7 @@ import {
   Clock,
   DollarSign,
   Globe,
+  Mic,
 } from "lucide-react";
 import { mockMentors, mockTimeSlots } from "@/lib/mockMentorData";
 import type { Mentor } from "@/lib/mockMentorData";
