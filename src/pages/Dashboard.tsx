@@ -72,7 +72,7 @@ const Dashboard = () => {
     { title: "Quiz Hub", href: "/quiz", icon: Target, desc: "Test your knowledge", color: "text-orange-500" },
     { title: "Forum", href: "/forum", icon: MessageSquare, desc: "Discuss & share", color: "text-pink-500" },
     { title: "Founder's Passport", href: "/founders-passport", icon: Flame, desc: "Your innovation ID", color: "text-orange-500" },
-
+  ];
   const recentActivity = [
     { action: "Uploaded a note", item: "OS Process Scheduling", time: "2h ago", icon: FileText, page: "/notes" },
     { action: "Posted an idea", item: "AI Study Companion", time: "5h ago", icon: Lightbulb, page: "/innovation-hub" },
