@@ -31,12 +31,18 @@ const Dashboard = () => {
     if (!user) return;
 
     const fetchDashboardData = async () => {
-      // Fetch notes count
-      const { count: notes } = await supabase
+      // Fetch notes with metrics
+      const { data: userNotes } = await supabase
         .from("notes")
-        .select("*", { count: "exact", head: true })
+        .select("views, downloads, rating")
         .eq("user_id", user.id);
-      setNotesCount(notes || 0);
+      if (userNotes) {
+        setNotesCount(userNotes.length);
+        setNotesViews(userNotes.reduce((sum, n) => sum + (n.views || 0), 0));
+        setNotesDownloads(userNotes.reduce((sum, n) => sum + (n.downloads || 0), 0));
+        const rated = userNotes.filter(n => Number(n.rating) > 0);
+        setNotesAvgRating(rated.length > 0 ? rated.reduce((sum, n) => sum + Number(n.rating), 0) / rated.length : 0);
+      }
 
       // Fetch ideas count
       const { count: ideas } = await supabase
