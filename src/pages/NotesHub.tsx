@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  BookOpen, Upload, Search, Filter, Star, Download, Eye,
-  MoreVertical, Grid3x3, List, X, Users, Plus, Sparkles,
-  FileText, Clock, TrendingUp, FolderOpen, Tag,
+  BookOpen, Upload, Search, Star, Download, Eye,
+  Grid3x3, List, X, Users, Plus, Sparkles,
+  FileText, TrendingUp, FolderOpen, Tag, Pencil, Trash2,
 } from "lucide-react";
 import { mockNotes } from "@/lib/mockData";
 import { toast } from "sonner";
@@ -20,11 +20,18 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NoteUploadDialog } from "@/components/NoteUploadDialog";
 import { NotePreviewer } from "@/components/NotePreviewer";
 import { BatchUploadDialog } from "@/components/BatchUploadDialog";
 import { NoteAIFeatures } from "@/components/NoteAIFeatures";
+import { NoteEditDialog } from "@/components/notes/NoteEditDialog";
+import { NoteDetailDialog } from "@/components/notes/NoteDetailDialog";
+import { NoteRating } from "@/components/notes/NoteRating";
 
 const NotesHub = () => {
   const navigate = useNavigate();
@@ -46,6 +53,13 @@ const NotesHub = () => {
   const [showAIFeatures, setShowAIFeatures] = useState(false);
   const [aiNote, setAiNote] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("browse");
+  // New states
+  const [editNote, setEditNote] = useState<any>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [deleteNote, setDeleteNote] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [detailNote, setDetailNote] = useState<any>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   useEffect(() => {
     loadNotes();
@@ -66,13 +80,25 @@ const NotesHub = () => {
   const createStudySession = async () => {
     if (!user) { toast.error("Please sign in"); navigate("/auth"); return; }
     if (!sessionName.trim()) { toast.error("Please enter a session name"); return; }
-
     const { data, error } = await supabase.from("study_sessions").insert({
       note_id: selectedNote.id, host_id: user.id, session_name: sessionName,
     }).select().single();
-
-    if (error) { toast.error("Failed to create session"); }
+    if (error) toast.error("Failed to create session");
     else { toast.success("Study session created!"); setShowSessionDialog(false); setSessionName(""); navigate(`/study-session/${data.id}`); }
+  };
+
+  const handleDeleteNote = async () => {
+    if (!deleteNote) return;
+    try {
+      const { error } = await supabase.from("notes").delete().eq("id", deleteNote.id);
+      if (error) throw error;
+      toast.success("Note deleted successfully!");
+      setShowDeleteDialog(false);
+      setDeleteNote(null);
+      loadNotes();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete note");
+    }
   };
 
   const subjects = Array.from(new Set(notes.map((n) => n.subject)));
@@ -87,7 +113,6 @@ const NotesHub = () => {
       const matchesCategory = !selectedCategory || note.category === selectedCategory;
       return matchesSearch && matchesSubject && matchesCategory;
     });
-
     switch (sortBy) {
       case "popular": filtered.sort((a, b) => (b.views || 0) - (a.views || 0)); break;
       case "top-rated": filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0)); break;
@@ -100,11 +125,10 @@ const NotesHub = () => {
 
   const filteredNotes = getFilteredNotes(notes);
   const filteredMyNotes = getFilteredNotes(myNotes);
-
   const totalViews = notes.reduce((sum, n) => sum + (n.views || 0), 0);
   const totalDownloads = notes.reduce((sum, n) => sum + (n.downloads || 0), 0);
 
-  const NoteCard = ({ note, index }: { note: any; index: number }) => (
+  const NoteCard = ({ note, index, isOwner = false }: { note: any; index: number; isOwner?: boolean }) => (
     <ScrollReveal key={note.id} delay={index * 0.03} direction="scale">
       <Card className="card-hover overflow-hidden transition-all bg-card/50 backdrop-blur-sm group h-full flex flex-col">
         <CardHeader className="pb-3">
@@ -114,9 +138,24 @@ const NotesHub = () => {
                 {note.category && <Badge variant="outline" className="text-xs shrink-0">{note.category}</Badge>}
                 {note.file_type && <Badge variant="secondary" className="text-xs shrink-0 uppercase">{note.file_type || "pdf"}</Badge>}
               </div>
-              <h3 className="font-semibold line-clamp-2 text-sm">{note.title}</h3>
+              <h3
+                className="font-semibold line-clamp-2 text-sm cursor-pointer hover:text-primary transition-colors"
+                onClick={() => { setDetailNote(note); setShowDetailDialog(true); }}
+              >
+                {note.title}
+              </h3>
               <p className="mt-1 text-xs text-muted-foreground">{note.subject}</p>
             </div>
+            {isOwner && (
+              <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditNote(note); setShowEditDialog(true); }}>
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => { setDeleteNote(note); setShowDeleteDialog(true); }}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="pb-3 flex-1">
@@ -132,7 +171,7 @@ const NotesHub = () => {
             ))}
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-warning text-warning" /><span>{note.rating || 0}</span></div>
+            <div className="flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-warning text-warning" /><span>{Number(note.rating || 0).toFixed(1)}</span></div>
             <div className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /><span>{note.views || 0}</span></div>
             <div className="flex items-center gap-1"><Download className="h-3.5 w-3.5" /><span>{note.downloads || 0}</span></div>
           </div>
@@ -142,18 +181,8 @@ const NotesHub = () => {
             <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => { setPreviewNote(note); setShowPreviewDialog(true); }}>
               <Eye className="mr-1 h-3 w-3" />Preview
             </Button>
-            <Button variant="default" size="sm" className="flex-1 text-xs" onClick={async () => {
-              try {
-                const response = await fetch(note.content_url);
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url; a.download = `${note.title}.pdf`;
-                document.body.appendChild(a); a.click();
-                window.URL.revokeObjectURL(url); document.body.removeChild(a);
-              } catch { toast.error("Download failed"); }
-            }}>
-              <Download className="mr-1 h-3 w-3" />Download
+            <Button variant="default" size="sm" className="flex-1 text-xs" onClick={() => { setDetailNote(note); setShowDetailDialog(true); }}>
+              <Star className="mr-1 h-3 w-3" />Rate & Comment
             </Button>
             <Button variant="secondary" size="sm" className="text-xs px-2" onClick={() => { setAiNote(note); setShowAIFeatures(true); }}>
               <Sparkles className="h-3 w-3" />
@@ -167,11 +196,11 @@ const NotesHub = () => {
     </ScrollReveal>
   );
 
-  const renderNotesList = (notesList: any[]) => (
+  const renderNotesList = (notesList: any[], isOwner = false) => (
     <>
       {notesList.length > 0 ? (
         <div className={viewMode === "grid" ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "space-y-3"}>
-          {notesList.map((note, index) => <NoteCard key={note.id} note={note} index={index} />)}
+          {notesList.map((note, index) => <NoteCard key={note.id} note={note} index={index} isOwner={isOwner} />)}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -192,55 +221,28 @@ const NotesHub = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-accent/5">
       <Header />
-
       <div className="container mx-auto px-4 py-6">
         {/* Hero Stats */}
         <ScrollReveal>
           <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{notes.length}</p>
-                  <p className="text-xs text-muted-foreground">Total Notes</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Eye className="h-5 w-5 text-accent-foreground" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{totalViews}</p>
-                  <p className="text-xs text-muted-foreground">Total Views</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-secondary/50 flex items-center justify-center">
-                  <Download className="h-5 w-5 text-secondary-foreground" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{totalDownloads}</p>
-                  <p className="text-xs text-muted-foreground">Downloads</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FolderOpen className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{subjects.length}</p>
-                  <p className="text-xs text-muted-foreground">Subjects</p>
-                </div>
-              </CardContent>
-            </Card>
+            {[
+              { icon: FileText, label: "Total Notes", value: notes.length, color: "bg-primary/10 text-primary" },
+              { icon: Eye, label: "Total Views", value: totalViews, color: "bg-accent/10 text-accent-foreground" },
+              { icon: Download, label: "Downloads", value: totalDownloads, color: "bg-secondary/50 text-secondary-foreground" },
+              { icon: FolderOpen, label: "Subjects", value: subjects.length, color: "bg-primary/10 text-primary" },
+            ].map((stat, i) => (
+              <Card key={i} className="bg-card/60 backdrop-blur-sm border-border/50">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${stat.color}`}>
+                    <stat.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </ScrollReveal>
 
@@ -275,8 +277,6 @@ const NotesHub = () => {
               )}
             </div>
           </div>
-
-          {/* Filter Pills */}
           <div className="flex flex-wrap gap-2">
             <Button variant={selectedSubject === null ? "default" : "outline"} size="sm" className="h-7 text-xs" onClick={() => setSelectedSubject(null)}>All Subjects</Button>
             {subjects.map((subject) => (
@@ -319,15 +319,36 @@ const NotesHub = () => {
                   <p className="mb-4 text-muted-foreground text-sm">Share your notes with the community and help fellow students!</p>
                   <Button onClick={() => setShowUploadDialog(true)}><Upload className="mr-2 h-4 w-4" />Upload Your First Note</Button>
                 </div>
-              ) : renderNotesList(filteredMyNotes)}
+              ) : renderNotesList(filteredMyNotes, true)}
             </TabsContent>
           )}
         </Tabs>
       </div>
 
+      {/* Dialogs */}
       <NoteUploadDialog open={showUploadDialog} onOpenChange={setShowUploadDialog} onSuccess={loadNotes} />
       <NotePreviewer open={showPreviewDialog} onOpenChange={setShowPreviewDialog} note={previewNote} />
       <BatchUploadDialog open={showBatchUpload} onOpenChange={setShowBatchUpload} onSuccess={loadNotes} />
+      <NoteDetailDialog open={showDetailDialog} onOpenChange={setShowDetailDialog} note={detailNote} onRefresh={loadNotes} />
+
+      {showEditDialog && editNote && (
+        <NoteEditDialog open={showEditDialog} onOpenChange={setShowEditDialog} note={editNote} onSuccess={loadNotes} />
+      )}
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Note</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteNote?.title}"? This action cannot be undone. All ratings and comments will also be removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteNote} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={showAIFeatures} onOpenChange={setShowAIFeatures}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
