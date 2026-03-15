@@ -109,6 +109,9 @@ const Dashboard = () => {
 
   const platformStats = [
     { label: "My Notes", value: notesCount.toString(), icon: BookOpen, href: "/notes", color: "bg-primary/10 text-primary" },
+    { label: "Notes Views", value: notesViews.toString(), icon: Eye, href: "/notes", color: "bg-accent/10 text-accent-foreground" },
+    { label: "Downloads", value: notesDownloads.toString(), icon: TrendingUp, href: "/notes", color: "bg-secondary/50 text-secondary-foreground" },
+    { label: "Avg Rating", value: notesAvgRating.toFixed(1), icon: Star, href: "/notes", color: "bg-primary/10 text-primary" },
     { label: "My Ideas", value: ideasCount.toString(), icon: Lightbulb, href: "/innovation-hub", color: "bg-yellow-500/10 text-yellow-500" },
     { label: "My Teams", value: teamsCount.toString(), icon: Users, href: "/team-hunt", color: "bg-blue-500/10 text-blue-500" },
     { label: "Notifications", value: notificationsCount.toString(), icon: Bell, href: "#", color: "bg-red-500/10 text-red-500" },
