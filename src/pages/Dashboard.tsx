@@ -19,6 +19,9 @@ import {
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const [notesCount, setNotesCount] = useState(0);
+  const [notesViews, setNotesViews] = useState(0);
+  const [notesDownloads, setNotesDownloads] = useState(0);
+  const [notesAvgRating, setNotesAvgRating] = useState(0);
   const [ideasCount, setIdeasCount] = useState(0);
   const [teamsCount, setTeamsCount] = useState(0);
   const [notificationsCount, setNotificationsCount] = useState(0);
