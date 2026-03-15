@@ -486,6 +486,89 @@ export type Database = {
           },
         ]
       }
+      note_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          note_id: string
+          parent_id: string | null
+          updated_at: string
+          upvotes: number | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          note_id: string
+          parent_id?: string | null
+          updated_at?: string
+          upvotes?: number | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          note_id?: string
+          parent_id?: string | null
+          updated_at?: string
+          upvotes?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_comments_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "note_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      note_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          note_id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note_id: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note_id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_ratings_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           branch: string | null

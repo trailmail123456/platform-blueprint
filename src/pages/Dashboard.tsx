@@ -13,12 +13,15 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, BookOpen, Calendar, MessageSquare, Trophy, TrendingUp,
   Clock, Award, Lightbulb, Users, Flame, Zap, Target, ArrowRight,
-  FileText, GraduationCap, Briefcase, Heart, Star, Bell, ChevronRight,
+  FileText, GraduationCap, Briefcase, Heart, Star, Bell, ChevronRight, Eye, Download,
 } from "lucide-react";
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const [notesCount, setNotesCount] = useState(0);
+  const [notesViews, setNotesViews] = useState(0);
+  const [notesDownloads, setNotesDownloads] = useState(0);
+  const [notesAvgRating, setNotesAvgRating] = useState(0);
   const [ideasCount, setIdeasCount] = useState(0);
   const [teamsCount, setTeamsCount] = useState(0);
   const [notificationsCount, setNotificationsCount] = useState(0);
@@ -28,12 +31,18 @@ const Dashboard = () => {
     if (!user) return;
 
     const fetchDashboardData = async () => {
-      // Fetch notes count
-      const { count: notes } = await supabase
+      // Fetch notes with metrics
+      const { data: userNotes } = await supabase
         .from("notes")
-        .select("*", { count: "exact", head: true })
+        .select("views, downloads, rating")
         .eq("user_id", user.id);
-      setNotesCount(notes || 0);
+      if (userNotes) {
+        setNotesCount(userNotes.length);
+        setNotesViews(userNotes.reduce((sum, n) => sum + (n.views || 0), 0));
+        setNotesDownloads(userNotes.reduce((sum, n) => sum + (n.downloads || 0), 0));
+        const rated = userNotes.filter(n => Number(n.rating) > 0);
+        setNotesAvgRating(rated.length > 0 ? rated.reduce((sum, n) => sum + Number(n.rating), 0) / rated.length : 0);
+      }
 
       // Fetch ideas count
       const { count: ideas } = await supabase
@@ -100,6 +109,9 @@ const Dashboard = () => {
 
   const platformStats = [
     { label: "My Notes", value: notesCount.toString(), icon: BookOpen, href: "/notes", color: "bg-primary/10 text-primary" },
+    { label: "Notes Views", value: notesViews.toString(), icon: Eye, href: "/notes", color: "bg-accent/10 text-accent-foreground" },
+    { label: "Downloads", value: notesDownloads.toString(), icon: TrendingUp, href: "/notes", color: "bg-secondary/50 text-secondary-foreground" },
+    { label: "Avg Rating", value: notesAvgRating.toFixed(1), icon: Star, href: "/notes", color: "bg-primary/10 text-primary" },
     { label: "My Ideas", value: ideasCount.toString(), icon: Lightbulb, href: "/innovation-hub", color: "bg-yellow-500/10 text-yellow-500" },
     { label: "My Teams", value: teamsCount.toString(), icon: Users, href: "/team-hunt", color: "bg-blue-500/10 text-blue-500" },
     { label: "Notifications", value: notificationsCount.toString(), icon: Bell, href: "#", color: "bg-red-500/10 text-red-500" },
@@ -142,7 +154,7 @@ const Dashboard = () => {
         </ScrollReveal>
 
         {/* Stats Row */}
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7 mb-8">
           {platformStats.map((stat, index) => (
             <ScrollReveal key={index} delay={index * 0.05} direction="scale">
               <Link to={stat.href}>
