@@ -154,7 +154,7 @@ const Dashboard = () => {
         </ScrollReveal>
 
         {/* Stats Row */}
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7 mb-8">
           {platformStats.map((stat, index) => (
             <ScrollReveal key={index} delay={index * 0.05} direction="scale">
               <Link to={stat.href}>
