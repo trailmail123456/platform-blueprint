@@ -8,33 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  BookOpen,
-  Upload,
-  Search,
-  Filter,
-  Star,
-  Download,
-  Eye,
-  MoreVertical,
-  Grid3x3,
-  List,
-  X,
-  Users,
-  Plus,
-  Sparkles,
+  BookOpen, Upload, Search, Filter, Star, Download, Eye,
+  MoreVertical, Grid3x3, List, X, Users, Plus, Sparkles,
+  FileText, Clock, TrendingUp, FolderOpen, Tag,
 } from "lucide-react";
 import { mockNotes } from "@/lib/mockData";
 import { toast } from "sonner";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NoteUploadDialog } from "@/components/NoteUploadDialog";
 import { NotePreviewer } from "@/components/NotePreviewer";
 import { BatchUploadDialog } from "@/components/BatchUploadDialog";
@@ -46,7 +32,10 @@ const NotesHub = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState("newest");
   const [notes, setNotes] = useState<any[]>([]);
+  const [myNotes, setMyNotes] = useState<any[]>([]);
   const [sessionName, setSessionName] = useState("");
   const [selectedNote, setSelectedNote] = useState<any>(null);
   const [showSessionDialog, setShowSessionDialog] = useState(false);
@@ -56,302 +45,293 @@ const NotesHub = () => {
   const [showBatchUpload, setShowBatchUpload] = useState(false);
   const [showAIFeatures, setShowAIFeatures] = useState(false);
   const [aiNote, setAiNote] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("browse");
 
   useEffect(() => {
     loadNotes();
-  }, []);
+  }, [user]);
 
   const loadNotes = async () => {
     const { data } = await supabase.from("notes").select("*").order("created_at", { ascending: false });
-    if (data) {
+    if (data && data.length > 0) {
       setNotes(data);
+      if (user) {
+        setMyNotes(data.filter((n: any) => n.user_id === user.id));
+      }
     } else {
-      setNotes(mockNotes);
+      setNotes(mockNotes as any[]);
     }
   };
 
   const createStudySession = async () => {
-    if (!user) {
-      toast.error("Please sign in to create a study session");
-      navigate("/auth");
-      return;
-    }
+    if (!user) { toast.error("Please sign in"); navigate("/auth"); return; }
+    if (!sessionName.trim()) { toast.error("Please enter a session name"); return; }
 
-    if (!sessionName.trim()) {
-      toast.error("Please enter a session name");
-      return;
-    }
+    const { data, error } = await supabase.from("study_sessions").insert({
+      note_id: selectedNote.id, host_id: user.id, session_name: sessionName,
+    }).select().single();
 
-    const { data, error } = await supabase
-      .from("study_sessions")
-      .insert({
-        note_id: selectedNote.id,
-        host_id: user.id,
-        session_name: sessionName,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      toast.error("Failed to create session");
-    } else {
-      toast.success("Study session created!");
-      setShowSessionDialog(false);
-      setSessionName("");
-      navigate(`/study-session/${data.id}`);
-    }
+    if (error) { toast.error("Failed to create session"); }
+    else { toast.success("Study session created!"); setShowSessionDialog(false); setSessionName(""); navigate(`/study-session/${data.id}`); }
   };
 
-  const subjects = Array.from(new Set(notes.map((note) => note.subject)));
+  const subjects = Array.from(new Set(notes.map((n) => n.subject)));
+  const categories = Array.from(new Set(notes.map((n) => n.category).filter(Boolean)));
 
-  const filteredNotes = notes.filter((note) => {
-    const matchesSearch =
-      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSubject = !selectedSubject || note.subject === selectedSubject;
-    return matchesSearch && matchesSubject;
-  });
+  const getFilteredNotes = (notesList: any[]) => {
+    let filtered = notesList.filter((note) => {
+      const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        note.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (note.description || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSubject = !selectedSubject || note.subject === selectedSubject;
+      const matchesCategory = !selectedCategory || note.category === selectedCategory;
+      return matchesSearch && matchesSubject && matchesCategory;
+    });
+
+    switch (sortBy) {
+      case "popular": filtered.sort((a, b) => (b.views || 0) - (a.views || 0)); break;
+      case "top-rated": filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0)); break;
+      case "most-downloaded": filtered.sort((a, b) => (b.downloads || 0) - (a.downloads || 0)); break;
+      case "oldest": filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); break;
+      default: filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    return filtered;
+  };
+
+  const filteredNotes = getFilteredNotes(notes);
+  const filteredMyNotes = getFilteredNotes(myNotes);
+
+  const totalViews = notes.reduce((sum, n) => sum + (n.views || 0), 0);
+  const totalDownloads = notes.reduce((sum, n) => sum + (n.downloads || 0), 0);
+
+  const NoteCard = ({ note, index }: { note: any; index: number }) => (
+    <ScrollReveal key={note.id} delay={index * 0.03} direction="scale">
+      <Card className="card-hover overflow-hidden transition-all bg-card/50 backdrop-blur-sm group h-full flex flex-col">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                {note.category && <Badge variant="outline" className="text-xs shrink-0">{note.category}</Badge>}
+                {note.file_type && <Badge variant="secondary" className="text-xs shrink-0 uppercase">{note.file_type || "pdf"}</Badge>}
+              </div>
+              <h3 className="font-semibold line-clamp-2 text-sm">{note.title}</h3>
+              <p className="mt-1 text-xs text-muted-foreground">{note.subject}</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pb-3 flex-1">
+          {note.description && (
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{note.description}</p>
+          )}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {note.semester && <Badge variant="secondary" className="text-xs">Sem {note.semester}</Badge>}
+            {note.branch && <Badge variant="outline" className="text-xs">{note.branch}</Badge>}
+            {note.university && <Badge variant="outline" className="text-xs">{note.university}</Badge>}
+            {note.tags?.slice(0, 2).map((tag: string) => (
+              <Badge key={tag} variant="accent" className="text-xs">{tag}</Badge>
+            ))}
+          </div>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-warning text-warning" /><span>{note.rating || 0}</span></div>
+            <div className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /><span>{note.views || 0}</span></div>
+            <div className="flex items-center gap-1"><Download className="h-3.5 w-3.5" /><span>{note.downloads || 0}</span></div>
+          </div>
+        </CardContent>
+        <CardFooter className="pt-3 border-t border-border/50">
+          <div className="flex w-full gap-1.5">
+            <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => { setPreviewNote(note); setShowPreviewDialog(true); }}>
+              <Eye className="mr-1 h-3 w-3" />Preview
+            </Button>
+            <Button variant="default" size="sm" className="flex-1 text-xs" onClick={async () => {
+              try {
+                const response = await fetch(note.content_url);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = `${note.title}.pdf`;
+                document.body.appendChild(a); a.click();
+                window.URL.revokeObjectURL(url); document.body.removeChild(a);
+              } catch { toast.error("Download failed"); }
+            }}>
+              <Download className="mr-1 h-3 w-3" />Download
+            </Button>
+            <Button variant="secondary" size="sm" className="text-xs px-2" onClick={() => { setAiNote(note); setShowAIFeatures(true); }}>
+              <Sparkles className="h-3 w-3" />
+            </Button>
+            <Button variant="outline" size="sm" className="text-xs px-2" onClick={() => { setSelectedNote(note); setShowSessionDialog(true); }}>
+              <Users className="h-3 w-3" />
+            </Button>
+          </div>
+        </CardFooter>
+      </Card>
+    </ScrollReveal>
+  );
+
+  const renderNotesList = (notesList: any[]) => (
+    <>
+      {notesList.length > 0 ? (
+        <div className={viewMode === "grid" ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "space-y-3"}>
+          {notesList.map((note, index) => <NoteCard key={note.id} note={note} index={index} />)}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <BookOpen className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="mb-2 text-lg font-semibold">No notes found</h3>
+          <p className="mb-4 text-muted-foreground text-sm">Try adjusting your search or filters, or upload the first note!</p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { setSearchQuery(""); setSelectedSubject(null); setSelectedCategory(null); }}>Clear Filters</Button>
+            {user && <Button onClick={() => setShowUploadDialog(true)}><Upload className="mr-2 h-4 w-4" />Upload Note</Button>}
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-accent/5">
       <Header />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6">
+        {/* Hero Stats */}
+        <ScrollReveal>
+          <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{notes.length}</p>
+                  <p className="text-xs text-muted-foreground">Total Notes</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Eye className="h-5 w-5 text-accent-foreground" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{totalViews}</p>
+                  <p className="text-xs text-muted-foreground">Total Views</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-secondary/50 flex items-center justify-center">
+                  <Download className="h-5 w-5 text-secondary-foreground" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{totalDownloads}</p>
+                  <p className="text-xs text-muted-foreground">Downloads</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <FolderOpen className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{subjects.length}</p>
+                  <p className="text-xs text-muted-foreground">Subjects</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </ScrollReveal>
+
         {/* Search and Filters */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="mb-6 space-y-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="relative flex-1 max-w-xl">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search notes by title, subject, or tags..."
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <Input placeholder="Search notes by title, subject, description..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="icon"
-                onClick={() => setViewMode("grid")}
-              >
-                <Grid3x3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "list" ? "default" : "ghost"}
-                size="icon"
-                onClick={() => setViewMode("list")}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm">
-                <Filter className="mr-2 h-4 w-4" />
-                Filters
-              </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[150px] h-9 text-xs">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                  <SelectItem value="popular">Most Viewed</SelectItem>
+                  <SelectItem value="top-rated">Top Rated</SelectItem>
+                  <SelectItem value="most-downloaded">Most Downloaded</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant={viewMode === "grid" ? "default" : "ghost"} size="icon" className="h-9 w-9" onClick={() => setViewMode("grid")}><Grid3x3 className="h-4 w-4" /></Button>
+              <Button variant={viewMode === "list" ? "default" : "ghost"} size="icon" className="h-9 w-9" onClick={() => setViewMode("list")}><List className="h-4 w-4" /></Button>
               {user && (
                 <>
-                  <Button onClick={() => setShowUploadDialog(true)} variant="default" size="sm">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Note
-                  </Button>
-                  <Button onClick={() => setShowBatchUpload(true)} variant="secondary" size="sm">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Batch Upload
-                  </Button>
+                  <Button onClick={() => setShowUploadDialog(true)} size="sm" className="h-9"><Upload className="mr-1.5 h-3.5 w-3.5" />Upload</Button>
+                  <Button onClick={() => setShowBatchUpload(true)} variant="secondary" size="sm" className="h-9"><Upload className="mr-1.5 h-3.5 w-3.5" />Batch</Button>
                 </>
               )}
             </div>
           </div>
 
-          {/* Subject Filter Pills */}
+          {/* Filter Pills */}
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant={selectedSubject === null ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedSubject(null)}
-            >
-              All Subjects
-            </Button>
+            <Button variant={selectedSubject === null ? "default" : "outline"} size="sm" className="h-7 text-xs" onClick={() => setSelectedSubject(null)}>All Subjects</Button>
             {subjects.map((subject) => (
-              <Button
-                key={subject}
-                variant={selectedSubject === subject ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedSubject(subject)}
-                className="relative"
-              >
+              <Button key={subject} variant={selectedSubject === subject ? "default" : "outline"} size="sm" className="h-7 text-xs" onClick={() => setSelectedSubject(subject)}>
                 {subject}
-                {selectedSubject === subject && (
-                  <X
-                    className="ml-2 h-3 w-3 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedSubject(null);
-                    }}
-                  />
-                )}
+                {selectedSubject === subject && <X className="ml-1 h-3 w-3" onClick={(e) => { e.stopPropagation(); setSelectedSubject(null); }} />}
               </Button>
             ))}
           </div>
-        </div>
-
-        {/* Results Count */}
-        <div className="mb-4 text-sm text-muted-foreground">
-          Showing {filteredNotes.length} {filteredNotes.length === 1 ? "note" : "notes"}
-        </div>
-
-        {/* Notes Grid/List */}
-        <div
-          className={
-            viewMode === "grid"
-              ? "grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-              : "space-y-4"
-          }
-        >
-          {filteredNotes.map((note, index) => (
-            <ScrollReveal key={note.id} delay={index * 0.05} direction="scale">
-              <Card className="card-hover overflow-hidden transition-all bg-card/50 backdrop-blur-sm">
-                <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold line-clamp-2">{note.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {note.subject}
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="pb-3">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">Semester {note.semester}</Badge>
-                  <Badge variant="outline">{note.branch}</Badge>
-                  {note.tags.slice(0, 2).map((tag) => (
-                    <Badge key={tag} variant="accent">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-                <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-warning text-warning" />
-                    <span>{note.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Eye className="h-4 w-4" />
-                    <span>{note.views}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Download className="h-4 w-4" />
-                    <span>{note.downloads}</span>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="pt-3">
-                <div className="flex w-full gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => {
-                      setPreviewNote(note);
-                      setShowPreviewDialog(true);
-                    }}
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    Preview
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="flex-1"
-                    onClick={async () => {
-                      const response = await fetch(note.content_url);
-                      const blob = await response.blob();
-                      const url = window.URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `${note.title}.pdf`;
-                      document.body.appendChild(a);
-                      a.click();
-                      window.URL.revokeObjectURL(url);
-                      document.body.removeChild(a);
-                    }}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      setAiNote(note);
-                      setShowAIFeatures(true);
-                    }}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedNote(note);
-                      setShowSessionDialog(true);
-                    }}
-                  >
-                    <Users className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardFooter>
-              </Card>
-            </ScrollReveal>
-          ))}
-        </div>
-
-        {filteredNotes.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-              <BookOpen className="h-8 w-8 text-muted-foreground" />
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground mt-1" />
+              <Button variant={selectedCategory === null ? "secondary" : "outline"} size="sm" className="h-7 text-xs" onClick={() => setSelectedCategory(null)}>All Categories</Button>
+              {categories.map((cat) => (
+                <Button key={cat} variant={selectedCategory === cat ? "secondary" : "outline"} size="sm" className="h-7 text-xs" onClick={() => setSelectedCategory(cat as string)}>
+                  {cat}
+                </Button>
+              ))}
             </div>
-            <h3 className="mb-2 text-lg font-semibold">No notes found</h3>
-            <p className="mb-4 text-muted-foreground">
-              Try adjusting your search or filters
-            </p>
-            <Button variant="outline" onClick={() => {
-              setSearchQuery("");
-              setSelectedSubject(null);
-            }}>
-              Clear Filters
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList>
+            <TabsTrigger value="browse"><BookOpen className="mr-1.5 h-3.5 w-3.5" />Browse All ({filteredNotes.length})</TabsTrigger>
+            {user && <TabsTrigger value="my-notes"><FolderOpen className="mr-1.5 h-3.5 w-3.5" />My Notes ({filteredMyNotes.length})</TabsTrigger>}
+          </TabsList>
+          <TabsContent value="browse" className="mt-4">
+            {renderNotesList(filteredNotes)}
+          </TabsContent>
+          {user && (
+            <TabsContent value="my-notes" className="mt-4">
+              {filteredMyNotes.length === 0 && searchQuery === "" && !selectedSubject && !selectedCategory ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold">You haven't uploaded any notes yet</h3>
+                  <p className="mb-4 text-muted-foreground text-sm">Share your notes with the community and help fellow students!</p>
+                  <Button onClick={() => setShowUploadDialog(true)}><Upload className="mr-2 h-4 w-4" />Upload Your First Note</Button>
+                </div>
+              ) : renderNotesList(filteredMyNotes)}
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
 
-      <NoteUploadDialog
-        open={showUploadDialog}
-        onOpenChange={setShowUploadDialog}
-        onSuccess={loadNotes}
-      />
-
-      <NotePreviewer
-        open={showPreviewDialog}
-        onOpenChange={setShowPreviewDialog}
-        note={previewNote}
-      />
-
-      <BatchUploadDialog
-        open={showBatchUpload}
-        onOpenChange={setShowBatchUpload}
-        onSuccess={loadNotes}
-      />
+      <NoteUploadDialog open={showUploadDialog} onOpenChange={setShowUploadDialog} onSuccess={loadNotes} />
+      <NotePreviewer open={showPreviewDialog} onOpenChange={setShowPreviewDialog} note={previewNote} />
+      <BatchUploadDialog open={showBatchUpload} onOpenChange={setShowBatchUpload} onSuccess={loadNotes} />
 
       <Dialog open={showAIFeatures} onOpenChange={setShowAIFeatures}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{aiNote?.title} - AI Features</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{aiNote?.title} - AI Features</DialogTitle></DialogHeader>
           {aiNote && <NoteAIFeatures noteId={aiNote.id} noteTitle={aiNote.title} />}
         </DialogContent>
       </Dialog>
@@ -360,25 +340,16 @@ const NotesHub = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Study Session</DialogTitle>
-            <DialogDescription>
-              Start a collaborative study session for {selectedNote?.title}
-            </DialogDescription>
+            <DialogDescription>Start a collaborative study session for {selectedNote?.title}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Session Name</label>
-              <Input
-                placeholder="e.g., Final Exam Prep"
-                value={sessionName}
-                onChange={(e) => setSessionName(e.target.value)}
-              />
+              <Input placeholder="e.g., Final Exam Prep" value={sessionName} onChange={(e) => setSessionName(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={createStudySession}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Session
-            </Button>
+            <Button onClick={createStudySession}><Plus className="mr-2 h-4 w-4" />Create Session</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
