@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, BookOpen, Calendar, MessageSquare, Trophy, TrendingUp,
   Clock, Award, Lightbulb, Users, Flame, Zap, Target, ArrowRight,
-  FileText, GraduationCap, Briefcase, Heart, Star, Bell, ChevronRight,
+  FileText, GraduationCap, Briefcase, Heart, Star, Bell, ChevronRight, Eye, Download,
 } from "lucide-react";
 
 const Dashboard = () => {
