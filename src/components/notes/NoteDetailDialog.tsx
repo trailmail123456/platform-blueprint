@@ -53,7 +53,7 @@ export const NoteDetailDialog = ({ open, onOpenChange, note, onRefresh }: NoteDe
           <div className="flex items-center gap-1"><Download className="h-4 w-4" />{note.downloads || 0} downloads</div>
           <div className="flex items-center gap-1">
             <Clock className="h-4 w-4" />
-            {new Date(note.created_at).toLocaleDateString()}
+            {note.created_at ? new Date(note.created_at).toLocaleDateString() : "Recently"}
           </div>
         </div>
 
