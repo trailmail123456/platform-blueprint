@@ -167,16 +167,19 @@ const NotesHub = () => {
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">{note.subject}</p>
             </div>
-            {isOwner && (
-              <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditNote(note); setShowEditDialog(true); }}>
-                  <Pencil className="h-3 w-3" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => { setDeleteNote(note); setShowDeleteDialog(true); }}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-1 ml-2">
+              <NoteBookmarkButton noteId={note.id} />
+              {isOwner && (
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditNote(note); setShowEditDialog(true); }}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => { setDeleteNote(note); setShowDeleteDialog(true); }}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pb-3 flex-1">
