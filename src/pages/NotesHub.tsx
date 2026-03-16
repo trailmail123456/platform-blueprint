@@ -347,6 +347,19 @@ const NotesHub = () => {
               ) : renderNotesList(filteredMyNotes, true)}
             </TabsContent>
           )}
+          {user && (
+            <TabsContent value="bookmarks" className="mt-4">
+              {filteredBookmarks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                    <Bookmark className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold">No bookmarked notes</h3>
+                  <p className="mb-4 text-muted-foreground text-sm">Click the bookmark icon on any note to save it for later!</p>
+                </div>
+              ) : renderNotesList(filteredBookmarks)}
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
