@@ -144,6 +144,8 @@ const NotesHub = () => {
 
   const filteredNotes = getFilteredNotes(notes);
   const filteredMyNotes = getFilteredNotes(myNotes);
+  const bookmarkedNotes = notes.filter(n => bookmarkedNoteIds.has(n.id));
+  const filteredBookmarks = getFilteredNotes(bookmarkedNotes);
   const totalViews = notes.reduce((sum, n) => sum + (n.views || 0), 0);
   const totalDownloads = notes.reduce((sum, n) => sum + (n.downloads || 0), 0);
 
