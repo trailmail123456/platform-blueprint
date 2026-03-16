@@ -65,6 +65,17 @@ const NotesHub = () => {
 
   useEffect(() => {
     loadNotes();
+    loadBookmarks();
+
+    // Real-time subscription for notes
+    const channel = supabase
+      .channel("notes-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "notes" }, () => {
+        loadNotes();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const loadNotes = async () => {
@@ -77,6 +88,12 @@ const NotesHub = () => {
     } else {
       setNotes(mockNotes as any[]);
     }
+  };
+
+  const loadBookmarks = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("note_bookmarks").select("note_id").eq("user_id", user.id);
+    if (data) setBookmarkedNoteIds(new Set(data.map(b => b.note_id)));
   };
 
   const createStudySession = async () => {
