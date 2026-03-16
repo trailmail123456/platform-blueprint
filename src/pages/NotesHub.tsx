@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BookOpen, Upload, Search, Star, Download, Eye,
   Grid3x3, List, X, Users, Plus, Sparkles,
-  FileText, TrendingUp, FolderOpen, Tag, Pencil, Trash2,
+  FileText, TrendingUp, FolderOpen, Tag, Pencil, Trash2, Bookmark,
 } from "lucide-react";
 import { mockNotes } from "@/lib/mockData";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ import { NoteAIFeatures } from "@/components/NoteAIFeatures";
 import { NoteEditDialog } from "@/components/notes/NoteEditDialog";
 import { NoteDetailDialog } from "@/components/notes/NoteDetailDialog";
 import { NoteRating } from "@/components/notes/NoteRating";
+import { NoteBookmarkButton } from "@/components/notes/NoteBookmarkButton";
 
 const NotesHub = () => {
   const navigate = useNavigate();
@@ -42,6 +43,7 @@ const NotesHub = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("newest");
   const [notes, setNotes] = useState<any[]>([]);
+  const [bookmarkedNoteIds, setBookmarkedNoteIds] = useState<Set<string>>(new Set());
   const [myNotes, setMyNotes] = useState<any[]>([]);
   const [sessionName, setSessionName] = useState("");
   const [selectedNote, setSelectedNote] = useState<any>(null);
@@ -63,6 +65,17 @@ const NotesHub = () => {
 
   useEffect(() => {
     loadNotes();
+    loadBookmarks();
+
+    // Real-time subscription for notes
+    const channel = supabase
+      .channel("notes-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "notes" }, () => {
+        loadNotes();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const loadNotes = async () => {
@@ -75,6 +88,12 @@ const NotesHub = () => {
     } else {
       setNotes(mockNotes as any[]);
     }
+  };
+
+  const loadBookmarks = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("note_bookmarks").select("note_id").eq("user_id", user.id);
+    if (data) setBookmarkedNoteIds(new Set(data.map(b => b.note_id)));
   };
 
   const createStudySession = async () => {
@@ -125,6 +144,8 @@ const NotesHub = () => {
 
   const filteredNotes = getFilteredNotes(notes);
   const filteredMyNotes = getFilteredNotes(myNotes);
+  const bookmarkedNotes = notes.filter(n => bookmarkedNoteIds.has(n.id));
+  const filteredBookmarks = getFilteredNotes(bookmarkedNotes);
   const totalViews = notes.reduce((sum, n) => sum + (n.views || 0), 0);
   const totalDownloads = notes.reduce((sum, n) => sum + (n.downloads || 0), 0);
 
@@ -146,16 +167,19 @@ const NotesHub = () => {
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">{note.subject}</p>
             </div>
-            {isOwner && (
-              <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditNote(note); setShowEditDialog(true); }}>
-                  <Pencil className="h-3 w-3" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => { setDeleteNote(note); setShowDeleteDialog(true); }}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-1 ml-2">
+              <NoteBookmarkButton noteId={note.id} />
+              {isOwner && (
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditNote(note); setShowEditDialog(true); }}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => { setDeleteNote(note); setShowDeleteDialog(true); }}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pb-3 flex-1">
@@ -304,6 +328,7 @@ const NotesHub = () => {
           <TabsList>
             <TabsTrigger value="browse"><BookOpen className="mr-1.5 h-3.5 w-3.5" />Browse All ({filteredNotes.length})</TabsTrigger>
             {user && <TabsTrigger value="my-notes"><FolderOpen className="mr-1.5 h-3.5 w-3.5" />My Notes ({filteredMyNotes.length})</TabsTrigger>}
+            {user && <TabsTrigger value="bookmarks"><Bookmark className="mr-1.5 h-3.5 w-3.5" />Bookmarks ({filteredBookmarks.length})</TabsTrigger>}
           </TabsList>
           <TabsContent value="browse" className="mt-4">
             {renderNotesList(filteredNotes)}
@@ -320,6 +345,19 @@ const NotesHub = () => {
                   <Button onClick={() => setShowUploadDialog(true)}><Upload className="mr-2 h-4 w-4" />Upload Your First Note</Button>
                 </div>
               ) : renderNotesList(filteredMyNotes, true)}
+            </TabsContent>
+          )}
+          {user && (
+            <TabsContent value="bookmarks" className="mt-4">
+              {filteredBookmarks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                    <Bookmark className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold">No bookmarked notes</h3>
+                  <p className="mb-4 text-muted-foreground text-sm">Click the bookmark icon on any note to save it for later!</p>
+                </div>
+              ) : renderNotesList(filteredBookmarks)}
             </TabsContent>
           )}
         </Tabs>
