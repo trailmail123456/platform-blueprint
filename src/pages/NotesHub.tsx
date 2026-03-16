@@ -32,6 +32,7 @@ import { NoteAIFeatures } from "@/components/NoteAIFeatures";
 import { NoteEditDialog } from "@/components/notes/NoteEditDialog";
 import { NoteDetailDialog } from "@/components/notes/NoteDetailDialog";
 import { NoteRating } from "@/components/notes/NoteRating";
+import { NoteBookmarkButton } from "@/components/notes/NoteBookmarkButton";
 
 const NotesHub = () => {
   const navigate = useNavigate();
