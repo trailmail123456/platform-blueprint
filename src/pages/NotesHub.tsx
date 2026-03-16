@@ -43,6 +43,7 @@ const NotesHub = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("newest");
   const [notes, setNotes] = useState<any[]>([]);
+  const [bookmarkedNoteIds, setBookmarkedNoteIds] = useState<Set<string>>(new Set());
   const [myNotes, setMyNotes] = useState<any[]>([]);
   const [sessionName, setSessionName] = useState("");
   const [selectedNote, setSelectedNote] = useState<any>(null);
