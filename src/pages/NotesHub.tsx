@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BookOpen, Upload, Search, Star, Download, Eye,
   Grid3x3, List, X, Users, Plus, Sparkles,
-  FileText, TrendingUp, FolderOpen, Tag, Pencil, Trash2,
+  FileText, TrendingUp, FolderOpen, Tag, Pencil, Trash2, Bookmark,
 } from "lucide-react";
 import { mockNotes } from "@/lib/mockData";
 import { toast } from "sonner";
