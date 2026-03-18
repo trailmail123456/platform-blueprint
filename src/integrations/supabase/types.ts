@@ -1005,6 +1005,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_note_downloads: {
+        Args: { _note_id: string }
+        Returns: undefined
+      }
+      increment_note_views: { Args: { _note_id: string }; Returns: undefined }
     }
     Enums: {
       app_role:

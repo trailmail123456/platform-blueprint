@@ -1,11 +1,13 @@
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Download, ExternalLink, Star, Eye, Clock } from "lucide-react";
+import { Download, ExternalLink, Eye, Clock } from "lucide-react";
 import { NoteRating } from "./NoteRating";
 import { NoteComments } from "./NoteComments";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NoteDetailDialogProps {
   open: boolean;
@@ -15,19 +17,38 @@ interface NoteDetailDialogProps {
 }
 
 export const NoteDetailDialog = ({ open, onOpenChange, note, onRefresh }: NoteDetailDialogProps) => {
+  // Track view when dialog opens
+  useEffect(() => {
+    if (open && note?.id) {
+      supabase.rpc("increment_note_views" as any, { _note_id: note.id }).then(() => {
+        onRefresh?.();
+      });
+    }
+  }, [open, note?.id]);
+
   if (!note) return null;
 
   const handleDownload = async () => {
     try {
+      // Track download atomically
+      supabase.rpc("increment_note_downloads" as any, { _note_id: note.id }).then(() => {
+        onRefresh?.();
+      });
+
       const response = await fetch(note.content_url);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = `${note.title}.pdf`;
-      document.body.appendChild(a); a.click();
-      window.URL.revokeObjectURL(url); document.body.removeChild(a);
+      a.href = url;
+      a.download = `${note.title}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       toast.success("Download started!");
-    } catch { toast.error("Download failed"); }
+    } catch {
+      toast.error("Download failed");
+    }
   };
 
   return (
@@ -49,8 +70,14 @@ export const NoteDetailDialog = ({ open, onOpenChange, note, onRefresh }: NoteDe
         )}
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1"><Eye className="h-4 w-4" />{note.views || 0} views</div>
-          <div className="flex items-center gap-1"><Download className="h-4 w-4" />{note.downloads || 0} downloads</div>
+          <div className="flex items-center gap-1">
+            <Eye className="h-4 w-4" />
+            {note.views || 0} views
+          </div>
+          <div className="flex items-center gap-1">
+            <Download className="h-4 w-4" />
+            {note.downloads || 0} downloads
+          </div>
           <div className="flex items-center gap-1">
             <Clock className="h-4 w-4" />
             {note.created_at ? new Date(note.created_at).toLocaleDateString() : "Recently"}
@@ -76,7 +103,9 @@ export const NoteDetailDialog = ({ open, onOpenChange, note, onRefresh }: NoteDe
         {note.tags?.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {note.tags.map((tag: string) => (
-              <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
             ))}
           </div>
         )}
