@@ -141,43 +141,52 @@ const NotesHub = () => {
           showUploadButtons={!!user}
         />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList>
-            <TabsTrigger value="browse"><BookOpen className="mr-1.5 h-3.5 w-3.5" />Browse All ({filteredNotes.length})</TabsTrigger>
-            {user && <TabsTrigger value="my-notes"><FolderOpen className="mr-1.5 h-3.5 w-3.5" />My Notes ({filteredMyNotes.length})</TabsTrigger>}
-            {user && <TabsTrigger value="bookmarks"><Bookmark className="mr-1.5 h-3.5 w-3.5" />Bookmarks ({filteredBookmarks.length})</TabsTrigger>}
-          </TabsList>
-          <TabsContent value="browse" className="mt-4">
-            {renderNotesList(filteredNotes)}
-          </TabsContent>
-          {user && (
-            <TabsContent value="my-notes" className="mt-4">
-              {filteredMyNotes.length === 0 && !filters.searchQuery && !filters.selectedSubject && !filters.selectedCategory ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="mb-2 text-lg font-semibold">You haven't uploaded any notes yet</h3>
-                  <p className="mb-4 text-muted-foreground text-sm">Share your notes with the community and help fellow students!</p>
-                  <Button onClick={() => setShowUploadDialog(true)}><Upload className="mr-2 h-4 w-4" />Upload Your First Note</Button>
-                </div>
-              ) : renderNotesList(filteredMyNotes, true)}
-            </TabsContent>
-          )}
-          {user && (
-            <TabsContent value="bookmarks" className="mt-4">
-              {filteredBookmarks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                    <Bookmark className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="mb-2 text-lg font-semibold">No bookmarked notes</h3>
-                  <p className="mb-4 text-muted-foreground text-sm">Click the bookmark icon on any note to save it for later!</p>
-                </div>
-              ) : renderNotesList(filteredBookmarks)}
-            </TabsContent>
-          )}
-        </Tabs>
+        <div className="flex gap-6 mb-6">
+          <div className="flex-1 min-w-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList>
+                <TabsTrigger value="browse"><BookOpen className="mr-1.5 h-3.5 w-3.5" />Browse All ({filteredNotes.length})</TabsTrigger>
+                {user && <TabsTrigger value="my-notes"><FolderOpen className="mr-1.5 h-3.5 w-3.5" />My Notes ({filteredMyNotes.length})</TabsTrigger>}
+                {user && <TabsTrigger value="bookmarks"><Bookmark className="mr-1.5 h-3.5 w-3.5" />Bookmarks ({filteredBookmarks.length})</TabsTrigger>}
+              </TabsList>
+              <TabsContent value="browse" className="mt-4">
+                {renderNotesList(filteredNotes)}
+              </TabsContent>
+              {user && (
+                <TabsContent value="my-notes" className="mt-4">
+                  {filteredMyNotes.length === 0 && !filters.searchQuery && !filters.selectedSubject && !filters.selectedCategory ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="mb-2 text-lg font-semibold">You haven't uploaded any notes yet</h3>
+                      <p className="mb-4 text-muted-foreground text-sm">Share your notes with the community and help fellow students!</p>
+                      <Button onClick={() => setShowUploadDialog(true)}><Upload className="mr-2 h-4 w-4" />Upload Your First Note</Button>
+                    </div>
+                  ) : renderNotesList(filteredMyNotes, true)}
+                </TabsContent>
+              )}
+              {user && (
+                <TabsContent value="bookmarks" className="mt-4">
+                  {filteredBookmarks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                        <Bookmark className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="mb-2 text-lg font-semibold">No bookmarked notes</h3>
+                      <p className="mb-4 text-muted-foreground text-sm">Click the bookmark icon on any note to save it for later!</p>
+                    </div>
+                  ) : renderNotesList(filteredBookmarks)}
+                </TabsContent>
+              )}
+            </Tabs>
+          </div>
+          <div className="hidden lg:block w-72 shrink-0">
+            <div className="sticky top-4">
+              <TopContributors />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Dialogs */}
