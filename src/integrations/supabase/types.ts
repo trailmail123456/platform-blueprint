@@ -395,6 +395,38 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_votes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_votes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "note_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ideas: {
         Row: {
           category: string
@@ -519,7 +551,11 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          downvotes: number | null
           id: string
+          is_edited: boolean | null
+          is_helpful: boolean | null
+          is_reported: boolean | null
           note_id: string
           parent_id: string | null
           updated_at: string
@@ -529,7 +565,11 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          downvotes?: number | null
           id?: string
+          is_edited?: boolean | null
+          is_helpful?: boolean | null
+          is_reported?: boolean | null
           note_id: string
           parent_id?: string | null
           updated_at?: string
@@ -539,7 +579,11 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          downvotes?: number | null
           id?: string
+          is_edited?: boolean | null
+          is_helpful?: boolean | null
+          is_reported?: boolean | null
           note_id?: string
           parent_id?: string | null
           updated_at?: string
@@ -1010,6 +1054,10 @@ export type Database = {
         Returns: undefined
       }
       increment_note_views: { Args: { _note_id: string }; Returns: undefined }
+      toggle_comment_vote: {
+        Args: { _comment_id: string; _user_id: string; _vote_type: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role:

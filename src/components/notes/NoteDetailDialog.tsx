@@ -113,7 +113,7 @@ export const NoteDetailDialog = ({ open, onOpenChange, note, onRefresh }: NoteDe
         <Separator />
 
         {/* Comments */}
-        <NoteComments noteId={note.id} />
+        <NoteComments noteId={note.id} noteOwnerId={note.user_id} />
       </DialogContent>
     </Dialog>
   );
