@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  BookOpen, Upload, Plus, Sparkles, Users, FolderOpen, Bookmark,
+  BookOpen, Upload, Plus, FolderOpen, Bookmark,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
