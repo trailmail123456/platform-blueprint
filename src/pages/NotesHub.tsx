@@ -26,6 +26,7 @@ import { NoteDetailDialog } from "@/components/notes/NoteDetailDialog";
 import { NoteCard } from "@/components/notes/NoteCard";
 import { NotesStatsBar } from "@/components/notes/NotesStatsBar";
 import { NotesFilterBar } from "@/components/notes/NotesFilterBar";
+import { TopContributors } from "@/components/notes/TopContributors";
 import { supabase } from "@/integrations/supabase/client";
 
 const NotesHub = () => {
