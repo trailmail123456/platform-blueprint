@@ -1,11 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Download, ExternalLink, Eye, Clock } from "lucide-react";
+import { Download, ExternalLink, Eye, Clock, Flag } from "lucide-react";
 import { NoteRating } from "./NoteRating";
 import { NoteComments } from "./NoteComments";
+import { ReportDialog } from "./ReportDialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 

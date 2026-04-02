@@ -52,12 +52,6 @@ export const ReportDialog = ({ open, onOpenChange, contentType, contentId }: Rep
     if (error) {
       toast.error("Failed to submit report");
     } else {
-      // Increment report_count on note if reporting a note
-      if (contentType === "note") {
-        await supabase.rpc("increment_note_views" as any, { _note_id: contentId }); // we'll use a simple update instead
-        await supabase.from("notes").update({ report_count: supabase.rpc("increment_note_views" as any, { _note_id: contentId }) } as any).eq("id", contentId);
-      }
-      // Increment report_count on the note
       if (contentType === "note") {
         const { data: noteData } = await supabase.from("notes").select("report_count").eq("id", contentId).single();
         await supabase.from("notes").update({ report_count: ((noteData as any)?.report_count || 0) + 1 } as any).eq("id", contentId);
