@@ -101,7 +101,12 @@ export const NoteDetailDialog = ({ open, onOpenChange, note, onRefresh }: NoteDe
           <Button variant="outline" onClick={() => window.open(note.content_url, "_blank")}>
             <ExternalLink className="mr-2 h-4 w-4" />Open
           </Button>
+          <Button variant="outline" size="icon" onClick={() => setShowReport(true)} title="Report this note">
+            <Flag className="h-4 w-4 text-destructive" />
+          </Button>
         </div>
+
+        <ReportDialog open={showReport} onOpenChange={setShowReport} contentType="note" contentId={note.id} />
 
         {note.tags?.length > 0 && (
           <div className="flex flex-wrap gap-1">
