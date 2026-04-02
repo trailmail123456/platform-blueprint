@@ -18,6 +18,8 @@ interface NoteDetailDialogProps {
 }
 
 export const NoteDetailDialog = ({ open, onOpenChange, note, onRefresh }: NoteDetailDialogProps) => {
+  const [showReport, setShowReport] = useState(false);
+
   // Track view when dialog opens
   useEffect(() => {
     if (open && note?.id) {
