@@ -17,8 +17,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Users, FileText, AlertTriangle, Shield, Trash2, Eye, CheckCircle, XCircle,
-  RefreshCw, Search, Star, TrendingDown, Flag, MessageSquare, BarChart3,
+  Users, FileText, AlertTriangle, Shield, Trash2, XCircle,
+  RefreshCw, Search, Star, Flag, MessageSquare, BarChart3,
 } from "lucide-react";
 import { ScrollReveal } from "@/components/animations/ScrollReveal";
 
