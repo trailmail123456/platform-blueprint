@@ -654,6 +654,7 @@ export type Database = {
           id: string
           last_viewed_at: string | null
           rating: number | null
+          report_count: number | null
           semester: number | null
           study_time_minutes: number | null
           subject: string
@@ -676,6 +677,7 @@ export type Database = {
           id?: string
           last_viewed_at?: string | null
           rating?: number | null
+          report_count?: number | null
           semester?: number | null
           study_time_minutes?: number | null
           subject: string
@@ -698,6 +700,7 @@ export type Database = {
           id?: string
           last_viewed_at?: string | null
           rating?: number | null
+          report_count?: number | null
           semester?: number | null
           study_time_minutes?: number | null
           subject?: string
@@ -771,6 +774,42 @@ export type Database = {
           id?: string
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          admin_note: string | null
+          content_id: string
+          content_type: string
+          created_at: string
+          id: string
+          reason: string
+          reported_by: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          content_id: string
+          content_type: string
+          created_at?: string
+          id?: string
+          reason: string
+          reported_by: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          reported_by?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1042,6 +1081,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      compute_note_quality_score: {
+        Args: { _note_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
