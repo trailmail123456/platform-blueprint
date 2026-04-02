@@ -1,11 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Download, ExternalLink, Eye, Clock } from "lucide-react";
+import { Download, ExternalLink, Eye, Clock, Flag } from "lucide-react";
 import { NoteRating } from "./NoteRating";
 import { NoteComments } from "./NoteComments";
+import { ReportDialog } from "./ReportDialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,6 +18,8 @@ interface NoteDetailDialogProps {
 }
 
 export const NoteDetailDialog = ({ open, onOpenChange, note, onRefresh }: NoteDetailDialogProps) => {
+  const [showReport, setShowReport] = useState(false);
+
   // Track view when dialog opens
   useEffect(() => {
     if (open && note?.id) {
@@ -98,7 +101,12 @@ export const NoteDetailDialog = ({ open, onOpenChange, note, onRefresh }: NoteDe
           <Button variant="outline" onClick={() => window.open(note.content_url, "_blank")}>
             <ExternalLink className="mr-2 h-4 w-4" />Open
           </Button>
+          <Button variant="outline" size="icon" onClick={() => setShowReport(true)} title="Report this note">
+            <Flag className="h-4 w-4 text-destructive" />
+          </Button>
         </div>
+
+        <ReportDialog open={showReport} onOpenChange={setShowReport} contentType="note" contentId={note.id} />
 
         {note.tags?.length > 0 && (
           <div className="flex flex-wrap gap-1">
