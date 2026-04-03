@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollReveal } from "@/components/animations/ScrollReveal";
 import {
-  BookOpen, Eye, TrendingUp, Star, Lightbulb, Users, Bell, Download,
+  BookOpen, Eye, Star, Lightbulb, Users, Bell, Download,
 } from "lucide-react";
 
 interface Stats {

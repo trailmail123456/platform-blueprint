@@ -37,7 +37,7 @@ const navItems: { id: Section; label: string; icon: typeof LayoutDashboard }[] =
 ];
 
 const Dashboard = () => {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [activeSection, setActiveSection] = useState<Section>("overview");
   const [stats, setStats] = useState({
     notesCount: 0, notesViews: 0, notesDownloads: 0,
