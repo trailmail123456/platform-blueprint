@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, Users, Sparkles, Plus, MessageCircle, ArrowUp, GraduationCap } from "lucide-react";
+import { Send, Users, Sparkles, Plus, GraduationCap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -19,11 +19,11 @@ interface Room {
   name: string;
   topic: string;
   description: string | null;
-  icon: string;
-  is_active: boolean;
-  mentor_led: boolean;
-  participant_count: number;
-  created_at: string;
+  icon: string | null;
+  is_active: boolean | null;
+  mentor_led: boolean | null;
+  participant_count: number | null;
+  created_at: string | null;
 }
 
 interface RoomMessage {
@@ -31,69 +31,140 @@ interface RoomMessage {
   room_id: string;
   user_id: string;
   content: string;
-  message_type: string;
-  is_mentor_message: boolean;
-  upvotes: number;
-  created_at: string;
+  message_type: string | null;
+  is_mentor_message: boolean | null;
+  created_at: string | null;
+  username?: string | null;
 }
 
-const defaultRooms: Omit<Room, "id" | "created_at">[] = [
-  { name: "AI Startups", topic: "ai-startups", description: "Discuss AI/ML startup ideas, tools, and trends", icon: "🤖", is_active: true, mentor_led: false, participant_count: 34 },
-  { name: "App Ideas", topic: "app-ideas", description: "Share and refine mobile & web app concepts", icon: "📱", is_active: true, mentor_led: false, participant_count: 28 },
-  { name: "EdTech", topic: "edtech", description: "Innovation in education technology", icon: "📚", is_active: true, mentor_led: true, participant_count: 19 },
-  { name: "Web3 & Crypto", topic: "web3", description: "Blockchain, DeFi, and decentralized apps", icon: "⛓️", is_active: true, mentor_led: false, participant_count: 22 },
-  { name: "UI/UX Design", topic: "ui-ux", description: "Design thinking, prototyping, and user research", icon: "🎨", is_active: true, mentor_led: true, participant_count: 15 },
-  { name: "Social Impact", topic: "social-impact", description: "Tech for good — sustainability, health, accessibility", icon: "🌍", is_active: true, mentor_led: false, participant_count: 12 },
+// Seed rooms to ensure at least some exist
+const defaultRoomSeeds = [
+  { name: "AI Startups", topic: "ai-startups", description: "Discuss AI/ML startup ideas, tools, and trends", icon: "🤖" },
+  { name: "App Ideas", topic: "app-ideas", description: "Share and refine mobile & web app concepts", icon: "📱" },
+  { name: "EdTech", topic: "edtech", description: "Innovation in education technology", icon: "📚" },
+  { name: "Web3 & Crypto", topic: "web3", description: "Blockchain, DeFi, and decentralized apps", icon: "⛓️" },
+  { name: "UI/UX Design", topic: "ui-ux", description: "Design thinking, prototyping, and user research", icon: "🎨" },
+  { name: "Social Impact", topic: "social-impact", description: "Tech for good — sustainability, health, accessibility", icon: "🌍" },
 ];
-
-const mockMessages: Record<string, { user: string; content: string; isMentor: boolean; time: string }[]> = {
-  "ai-startups": [
-    { user: "Aman K.", content: "Has anyone tried fine-tuning LLMs for domain-specific customer support?", isMentor: false, time: "2m ago" },
-    { user: "Dr. Sharma", content: "Great question! Fine-tuning works well but consider RAG first — it's cheaper and often sufficient for support use cases.", isMentor: true, time: "1m ago" },
-    { user: "Priya S.", content: "I built a prototype using RAG + Gemini. Happy to share the architecture!", isMentor: false, time: "30s ago" },
-  ],
-  "app-ideas": [
-    { user: "Rahul M.", content: "What if we built a campus-specific lost & found app with image recognition?", isMentor: false, time: "5m ago" },
-    { user: "Sneha T.", content: "Love it! Could integrate with campus security systems too.", isMentor: false, time: "3m ago" },
-  ],
-};
 
 export const BrainstormRooms = () => {
   const { user } = useAuth();
-  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
-  const [messages, setMessages] = useState<{ user: string; content: string; isMentor: boolean; time: string }[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [newRoom, setNewRoom] = useState({ name: "", description: "", topic: "" });
+  const [loadingRooms, setLoadingRooms] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const selectedRoomData = defaultRooms.find(r => r.topic === selectedRoom);
+  const selectedRoom = rooms.find(r => r.id === selectedRoomId);
 
+  // Fetch rooms
   useEffect(() => {
-    if (selectedRoom && mockMessages[selectedRoom]) {
-      setMessages(mockMessages[selectedRoom]);
-    } else {
-      setMessages([]);
-    }
-  }, [selectedRoom]);
+    const fetchRooms = async () => {
+      const { data } = await supabase
+        .from("brainstorm_rooms")
+        .select("*")
+        .eq("is_active", true)
+        .order("participant_count", { ascending: false });
+      
+      if (data && data.length > 0) {
+        setRooms(data);
+      } else {
+        // Use seed data as fallback display
+        setRooms(defaultRoomSeeds.map((r, i) => ({
+          id: `seed-${i}`,
+          ...r,
+          is_active: true,
+          mentor_led: i === 2 || i === 4,
+          participant_count: Math.floor(Math.random() * 30) + 5,
+          created_at: new Date().toISOString(),
+        })));
+      }
+      setLoadingRooms(false);
+    };
+    fetchRooms();
+  }, []);
 
+  // Fetch messages when room selected
+  useEffect(() => {
+    if (!selectedRoomId || selectedRoomId.startsWith("seed-")) {
+      setMessages([]);
+      return;
+    }
+    setLoadingMessages(true);
+    const fetchMessages = async () => {
+      const { data } = await supabase
+        .from("brainstorm_messages")
+        .select("*")
+        .eq("room_id", selectedRoomId)
+        .order("created_at", { ascending: true })
+        .limit(100);
+
+      if (data) {
+        const userIds = [...new Set(data.map(m => m.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", userIds);
+        setMessages(data.map(m => ({
+          ...m,
+          username: profiles?.find(p => p.id === m.user_id)?.username,
+        })));
+      }
+      setLoadingMessages(false);
+    };
+    fetchMessages();
+
+    // Realtime messages
+    const channel = supabase
+      .channel(`room-${selectedRoomId}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "brainstorm_messages",
+        filter: `room_id=eq.${selectedRoomId}`,
+      }, async (payload) => {
+        const msg = payload.new as RoomMessage;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", msg.user_id)
+          .single();
+        setMessages(prev => [...prev, { ...msg, username: profile?.username }]);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedRoomId]);
+
+  // Auto scroll
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  const sendMessage = () => {
-    if (!newMessage.trim()) return;
-    const msg = {
-      user: user?.email?.split("@")[0] || "You",
-      content: newMessage,
-      isMentor: false,
-      time: "now",
-    };
-    setMessages(prev => [...prev, msg]);
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !user || !selectedRoomId) return;
+    if (selectedRoomId.startsWith("seed-")) {
+      toast.error("Sign in and use a real room to send messages");
+      return;
+    }
+    setSending(true);
+    const { error } = await supabase.from("brainstorm_messages").insert({
+      room_id: selectedRoomId,
+      user_id: user.id,
+      content: newMessage.trim(),
+    });
+    if (error) {
+      toast.error("Failed to send message");
+    }
     setNewMessage("");
-    toast.success("Message sent!");
+    setSending(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -103,16 +174,28 @@ export const BrainstormRooms = () => {
     }
   };
 
-  const handleCreateRoom = () => {
-    if (!newRoom.name.trim()) return;
-    toast.success(`Room "${newRoom.name}" created!`);
+  const handleCreateRoom = async () => {
+    if (!newRoom.name.trim() || !user) return;
+    const { error } = await supabase.from("brainstorm_rooms").insert({
+      name: newRoom.name.trim(),
+      topic: newRoom.name.trim().toLowerCase().replace(/\s+/g, "-"),
+      description: newRoom.description || null,
+      created_by: user.id,
+    });
+    if (error) {
+      toast.error("Failed to create room");
+    } else {
+      toast.success(`Room "${newRoom.name}" created!`);
+      // Refetch rooms
+      const { data } = await supabase.from("brainstorm_rooms").select("*").eq("is_active", true).order("participant_count", { ascending: false });
+      if (data) setRooms(data);
+    }
     setCreateOpen(false);
     setNewRoom({ name: "", description: "", topic: "" });
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -124,8 +207,7 @@ export const BrainstormRooms = () => {
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Room
+              <Plus className="h-4 w-4" /> Create Room
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -135,116 +217,119 @@ export const BrainstormRooms = () => {
             <div className="space-y-4 pt-4">
               <Input placeholder="Room name" value={newRoom.name} onChange={e => setNewRoom(prev => ({ ...prev, name: e.target.value }))} />
               <Textarea placeholder="Description" value={newRoom.description} onChange={e => setNewRoom(prev => ({ ...prev, description: e.target.value }))} />
-              <Button onClick={handleCreateRoom} className="w-full">Create Room</Button>
+              <Button onClick={handleCreateRoom} className="w-full" disabled={!user}>
+                {!user ? "Sign in to create" : "Create Room"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Room List */}
         <div className="lg:col-span-1 space-y-3">
-          {defaultRooms.map((room, i) => (
-            <motion.div key={room.topic} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card
-                className={`cursor-pointer transition-all hover:shadow-md ${selectedRoom === room.topic ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"}`}
-                onClick={() => setSelectedRoom(room.topic)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">{room.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold truncate">{room.name}</h3>
-                        {room.mentor_led && (
-                          <Badge variant="secondary" className="text-xs gap-1 shrink-0">
-                            <GraduationCap className="h-3 w-3" />
-                            Mentor
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{room.description}</p>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {room.participant_count}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageCircle className="h-3 w-3" />
-                          {mockMessages[room.topic]?.length || 0}
-                        </span>
-                        <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          {loadingRooms ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            rooms.map((room, i) => (
+              <motion.div key={room.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
+                <Card
+                  className={`cursor-pointer transition-all hover:shadow-md ${selectedRoomId === room.id ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"}`}
+                  onClick={() => setSelectedRoomId(room.id)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">{room.icon || "💡"}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold truncate">{room.name}</h3>
+                          {room.mentor_led && (
+                            <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                              <GraduationCap className="h-3 w-3" /> Mentor
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{room.description}</p>
+                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" /> {room.participant_count || 0}
+                          </span>
+                          <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          )}
         </div>
 
-        {/* Chat Area */}
         <div className="lg:col-span-2">
-          {selectedRoom ? (
+          {selectedRoomId ? (
             <Card className="h-[600px] flex flex-col">
               <CardHeader className="border-b py-3 px-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">{selectedRoomData?.icon}</span>
+                    <span className="text-xl">{selectedRoom?.icon || "💡"}</span>
                     <div>
-                      <h3 className="font-semibold">{selectedRoomData?.name}</h3>
-                      <p className="text-xs text-muted-foreground">{selectedRoomData?.description}</p>
+                      <h3 className="font-semibold">{selectedRoom?.name}</h3>
+                      <p className="text-xs text-muted-foreground">{selectedRoom?.description}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {selectedRoomData?.mentor_led && (
-                      <Badge variant="accent" className="text-xs">Mentor-Led</Badge>
-                    )}
-                    <Badge variant="outline" className="text-xs gap-1">
-                      <Users className="h-3 w-3" />
-                      {selectedRoomData?.participant_count} online
-                    </Badge>
-                  </div>
+                  <Badge variant="outline" className="text-xs gap-1">
+                    <Users className="h-3 w-3" /> {selectedRoom?.participant_count || 0} online
+                  </Badge>
                 </div>
               </CardHeader>
 
               <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-                <div className="space-y-4">
-                  <AnimatePresence>
-                    {messages.map((msg, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex gap-3 group"
-                      >
-                        <Avatar className="h-8 w-8 shrink-0">
-                          <AvatarFallback className={msg.isMentor ? "bg-primary text-primary-foreground" : "bg-muted"}>
-                            {msg.user[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{msg.user}</span>
-                            {msg.isMentor && (
-                              <Badge variant="secondary" className="text-[10px] py-0 gap-1">
-                                <GraduationCap className="h-2.5 w-2.5" />
-                                Mentor
-                              </Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground">{msg.time}</span>
+                {loadingMessages ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <AnimatePresence>
+                      {messages.map((msg) => (
+                        <motion.div
+                          key={msg.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex gap-3 group"
+                        >
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarFallback className={msg.is_mentor_message ? "bg-primary text-primary-foreground" : "bg-muted"}>
+                              {(msg.username || "U")[0].toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">{msg.username || "User"}</span>
+                              {msg.is_mentor_message && (
+                                <Badge variant="secondary" className="text-[10px] py-0 gap-1">
+                                  <GraduationCap className="h-2.5 w-2.5" /> Mentor
+                                </Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {msg.created_at ? formatDistanceToNow(new Date(msg.created_at), { addSuffix: true }) : "now"}
+                              </span>
+                            </div>
+                            <p className={`text-sm mt-1 ${msg.is_mentor_message ? "bg-primary/5 p-2 rounded-lg border border-primary/20" : ""}`}>
+                              {msg.content}
+                            </p>
                           </div>
-                          <p className={`text-sm mt-1 ${msg.isMentor ? "bg-primary/5 p-2 rounded-lg border border-primary/20" : ""}`}>
-                            {msg.content}
-                          </p>
-                          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 mt-1 gap-1">
-                            <ArrowUp className="h-3 w-3" /> Upvote
-                          </Button>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                    {messages.length === 0 && !loadingMessages && (
+                      <div className="text-center py-12 text-muted-foreground text-sm">
+                        No messages yet. Start the conversation!
+                      </div>
+                    )}
+                  </div>
+                )}
               </ScrollArea>
 
               <div className="p-4 border-t">
@@ -253,11 +338,12 @@ export const BrainstormRooms = () => {
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    placeholder="Share your thoughts..."
+                    placeholder={user ? "Share your thoughts..." : "Sign in to chat"}
                     className="flex-1"
+                    disabled={!user}
                   />
-                  <Button onClick={sendMessage} disabled={!newMessage.trim()}>
-                    <Send className="h-4 w-4" />
+                  <Button onClick={sendMessage} disabled={!newMessage.trim() || !user || sending}>
+                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </div>
               </div>
