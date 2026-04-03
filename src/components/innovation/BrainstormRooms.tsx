@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, Users, Sparkles, Plus, MessageCircle, ArrowUp, GraduationCap, Loader2 } from "lucide-react";
+import { Send, Users, Sparkles, Plus, GraduationCap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
