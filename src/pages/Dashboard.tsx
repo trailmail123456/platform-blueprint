@@ -6,14 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, BookOpen, Lightbulb, Users, Bell, Star,
-  ArrowRight, Eye, Download, Handshake, Radio, User,
+  ArrowRight, Handshake, Radio, User,
   Calendar, Target, GraduationCap, MessageSquare, Briefcase,
-  Flame, Trophy, Award, Zap, TrendingUp, Clock, ChevronRight,
+  Flame, Award, TrendingUp,
 } from "lucide-react";
 
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
