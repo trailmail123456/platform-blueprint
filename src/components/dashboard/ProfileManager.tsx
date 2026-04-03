@@ -1,0 +1,112 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
+import { User, Save, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+interface Profile {
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
+export const ProfileManager = ({ userId, email }: { userId: string; email: string }) => {
+  const [profile, setProfile] = useState<Profile>({ username: null, full_name: null, avatar_url: null });
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("username, full_name, avatar_url")
+        .eq("id", userId)
+        .single();
+      if (data) setProfile(data);
+      setLoading(false);
+    };
+    fetch();
+  }, [userId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        username: profile.username,
+        full_name: profile.full_name,
+      })
+      .eq("id", userId);
+
+    if (error) {
+      toast.error("Failed to update profile");
+    } else {
+      toast.success("Profile updated!");
+    }
+    setSaving(false);
+  };
+
+  const initials = (profile.full_name || profile.username || email.split("@")[0])
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  if (loading) return <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Loading...</CardContent></Card>;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <User className="h-5 w-5 text-primary" />
+          Profile Management
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-16 w-16 ring-2 ring-primary/20">
+            <AvatarFallback className="text-lg bg-gradient-to-br from-primary to-accent text-primary-foreground">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-semibold">{profile.full_name || profile.username || "Student"}</p>
+            <p className="text-sm text-muted-foreground">{email}</p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Full Name</Label>
+            <Input
+              id="fullName"
+              value={profile.full_name || ""}
+              onChange={(e) => setProfile(p => ({ ...p, full_name: e.target.value }))}
+              placeholder="Your full name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              value={profile.username || ""}
+              onChange={(e) => setProfile(p => ({ ...p, username: e.target.value }))}
+              placeholder="your_username"
+            />
+          </div>
+        </div>
+
+        <Button onClick={handleSave} disabled={saving} className="gap-2">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Save Changes
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
