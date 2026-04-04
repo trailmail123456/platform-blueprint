@@ -219,6 +219,28 @@ export const IdeaLiveChat = ({ ideaId }: IdeaLiveChatProps) => {
     if (error) {
       toast.error("Failed to send message");
       setNewMessage(content);
+    } else {
+      // Notify idea owner (if sender is not the owner)
+      const { data: idea } = await supabase
+        .from("ideas")
+        .select("user_id, title")
+        .eq("id", ideaId)
+        .single();
+
+      if (idea && idea.user_id !== user.id) {
+        const senderName =
+          user.email?.split("@")[0] ||
+          user.user_metadata?.username ||
+          "Someone";
+        await supabase.from("notifications").insert({
+          user_id: idea.user_id,
+          title: "New message on your idea",
+          message: `${senderName} sent a message in "${idea.title}"`,
+          type: "chat",
+          action_url: `/innovation-hub?idea=${ideaId}`,
+          metadata: { idea_id: ideaId, sender_id: user.id },
+        });
+      }
     }
     setSending(false);
   };
