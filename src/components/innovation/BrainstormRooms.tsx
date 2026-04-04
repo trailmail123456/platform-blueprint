@@ -58,6 +58,7 @@ export const BrainstormRooms = () => {
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const [typingUser, setTypingUser] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const selectedRoom = rooms.find(r => r.id === selectedRoomId);
