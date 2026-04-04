@@ -40,6 +40,7 @@ export const IdeaLiveChat = ({ ideaId }: IdeaLiveChatProps) => {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notifCooldownRef = useRef<Record<string, number>>({});
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Profile cache to avoid re-fetching
