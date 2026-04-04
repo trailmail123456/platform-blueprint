@@ -119,9 +119,12 @@ export const BrainstormRooms = () => {
     };
     fetchMessages();
 
-    // Realtime messages
-    const channel = supabase
-      .channel(`room-${selectedRoomId}`)
+    // Realtime messages + presence
+    const channel = supabase.channel(`room-${selectedRoomId}`, {
+      config: { presence: { key: user?.id || "anon" } },
+    });
+
+    channel
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
@@ -134,12 +137,31 @@ export const BrainstormRooms = () => {
           .select("username")
           .eq("id", msg.user_id)
           .single();
-        setMessages(prev => [...prev, { ...msg, username: profile?.username }]);
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, { ...msg, username: profile?.username }];
+        });
       })
-      .subscribe();
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState();
+        const count = Object.keys(state).length;
+        setRooms(prev => prev.map(r => r.id === selectedRoomId ? { ...r, participant_count: count } : r));
+      })
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        if (payload.userId !== user?.id) {
+          setTypingUser(payload.username);
+          setTimeout(() => setTypingUser(null), 3000);
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED" && user) {
+          const username = user.email?.split("@")[0] || "Anonymous";
+          await channel.track({ username, status: "online" });
+        }
+      });
 
     return () => { supabase.removeChannel(channel); };
-  }, [selectedRoomId]);
+  }, [selectedRoomId, user]);
 
   // Auto scroll
   useEffect(() => {
