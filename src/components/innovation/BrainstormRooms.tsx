@@ -58,6 +58,7 @@ export const BrainstormRooms = () => {
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const [typingUser, setTypingUser] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const selectedRoom = rooms.find(r => r.id === selectedRoomId);
@@ -119,9 +120,12 @@ export const BrainstormRooms = () => {
     };
     fetchMessages();
 
-    // Realtime messages
-    const channel = supabase
-      .channel(`room-${selectedRoomId}`)
+    // Realtime messages + presence
+    const channel = supabase.channel(`room-${selectedRoomId}`, {
+      config: { presence: { key: user?.id || "anon" } },
+    });
+
+    channel
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
@@ -134,12 +138,31 @@ export const BrainstormRooms = () => {
           .select("username")
           .eq("id", msg.user_id)
           .single();
-        setMessages(prev => [...prev, { ...msg, username: profile?.username }]);
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, { ...msg, username: profile?.username }];
+        });
       })
-      .subscribe();
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState();
+        const count = Object.keys(state).length;
+        setRooms(prev => prev.map(r => r.id === selectedRoomId ? { ...r, participant_count: count } : r));
+      })
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        if (payload.userId !== user?.id) {
+          setTypingUser(payload.username);
+          setTimeout(() => setTypingUser(null), 3000);
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED" && user) {
+          const username = user.email?.split("@")[0] || "Anonymous";
+          await channel.track({ username, status: "online" });
+        }
+      });
 
     return () => { supabase.removeChannel(channel); };
-  }, [selectedRoomId]);
+  }, [selectedRoomId, user]);
 
   // Auto scroll
   useEffect(() => {
@@ -332,11 +355,29 @@ export const BrainstormRooms = () => {
                 )}
               </ScrollArea>
 
+              {typingUser && (
+                <div className="px-4 py-1 text-xs text-muted-foreground flex items-center gap-1">
+                  <span className="flex gap-0.5">
+                    {[0, 1, 2].map((i) => (
+                      <span key={i} className="h-1 w-1 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: `${i * 100}ms` }} />
+                    ))}
+                  </span>
+                  {typingUser} is typing...
+                </div>
+              )}
+
               <div className="p-4 border-t">
                 <div className="flex gap-2">
                   <Input
                     value={newMessage}
-                    onChange={e => setNewMessage(e.target.value)}
+                    onChange={e => {
+                      setNewMessage(e.target.value);
+                      // Broadcast typing
+                      if (user && selectedRoomId) {
+                        const ch = supabase.channel(`room-${selectedRoomId}`);
+                        ch.send({ type: "broadcast", event: "typing", payload: { userId: user.id, username: user.email?.split("@")[0] || "Anonymous" } });
+                      }
+                    }}
                     onKeyDown={handleKeyPress}
                     placeholder={user ? "Share your thoughts..." : "Sign in to chat"}
                     className="flex-1"
