@@ -355,11 +355,29 @@ export const BrainstormRooms = () => {
                 )}
               </ScrollArea>
 
+              {typingUser && (
+                <div className="px-4 py-1 text-xs text-muted-foreground flex items-center gap-1">
+                  <span className="flex gap-0.5">
+                    {[0, 1, 2].map((i) => (
+                      <span key={i} className="h-1 w-1 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: `${i * 100}ms` }} />
+                    ))}
+                  </span>
+                  {typingUser} is typing...
+                </div>
+              )}
+
               <div className="p-4 border-t">
                 <div className="flex gap-2">
                   <Input
                     value={newMessage}
-                    onChange={e => setNewMessage(e.target.value)}
+                    onChange={e => {
+                      setNewMessage(e.target.value);
+                      // Broadcast typing
+                      if (user && selectedRoomId) {
+                        const ch = supabase.channel(`room-${selectedRoomId}`);
+                        ch.send({ type: "broadcast", event: "typing", payload: { userId: user.id, username: user.email?.split("@")[0] || "Anonymous" } });
+                      }
+                    }}
                     onKeyDown={handleKeyPress}
                     placeholder={user ? "Share your thoughts..." : "Sign in to chat"}
                     className="flex-1"
