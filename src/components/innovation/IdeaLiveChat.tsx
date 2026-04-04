@@ -221,26 +221,34 @@ export const IdeaLiveChat = ({ ideaId }: IdeaLiveChatProps) => {
       toast.error("Failed to send message");
       setNewMessage(content);
     } else {
-      // Notify idea owner (if sender is not the owner)
-      const { data: idea } = await supabase
-        .from("ideas")
-        .select("user_id, title")
-        .eq("id", ideaId)
-        .single();
+      // Rate-limited notification to idea owner (1 per sender per 5 min)
+      const cooldownKey = `${ideaId}:${user.id}`;
+      const lastNotif = notifCooldownRef.current[cooldownKey] || 0;
+      const now = Date.now();
+      if (now - lastNotif < 5 * 60 * 1000) {
+        // Skip — already notified recently
+      } else {
+        const { data: idea } = await supabase
+          .from("ideas")
+          .select("user_id, title")
+          .eq("id", ideaId)
+          .single();
 
-      if (idea && idea.user_id !== user.id) {
-        const senderName =
-          user.email?.split("@")[0] ||
-          user.user_metadata?.username ||
-          "Someone";
-        await supabase.from("notifications").insert({
-          user_id: idea.user_id,
-          title: "New message on your idea",
-          message: `${senderName} sent a message in "${idea.title}"`,
-          type: "chat",
-          action_url: `/innovation-hub?idea=${ideaId}`,
-          metadata: { idea_id: ideaId, sender_id: user.id },
-        });
+        if (idea && idea.user_id !== user.id) {
+          const senderName =
+            user.email?.split("@")[0] ||
+            user.user_metadata?.username ||
+            "Someone";
+          await supabase.from("notifications").insert({
+            user_id: idea.user_id,
+            title: "New message on your idea",
+            message: `${senderName} sent a message in "${idea.title}"`,
+            type: "chat",
+            action_url: `/innovation-hub?idea=${ideaId}`,
+            metadata: { idea_id: ideaId, sender_id: user.id },
+          });
+          notifCooldownRef.current[cooldownKey] = now;
+        }
       }
     }
     setSending(false);
