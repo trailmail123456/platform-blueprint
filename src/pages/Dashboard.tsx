@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, BookOpen, Lightbulb, Users, Bell, Star,
-  ArrowRight, Handshake, Radio, User,
+  ArrowRight, Handshake, Radio, User, UserPlus,
   Calendar, Target, GraduationCap, MessageSquare, Briefcase,
   Flame, Award, TrendingUp,
 } from "lucide-react";
@@ -22,13 +22,15 @@ import { MyTeams } from "@/components/dashboard/MyTeams";
 import { NotificationsPanel } from "@/components/dashboard/NotificationsPanel";
 import { LiveActivity } from "@/components/dashboard/LiveActivity";
 import { ProfileManager } from "@/components/dashboard/ProfileManager";
+import { JoinRequestsManager } from "@/components/dashboard/JoinRequestsManager";
 
-type Section = "overview" | "ideas" | "collaborations" | "teams" | "notifications" | "live" | "profile" | "links";
+type Section = "overview" | "ideas" | "collaborations" | "requests" | "teams" | "notifications" | "live" | "profile" | "links";
 
 const navItems: { id: Section; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "ideas", label: "My Ideas", icon: Lightbulb },
   { id: "collaborations", label: "Collaborations", icon: Handshake },
+  { id: "requests", label: "Join Requests", icon: UserPlus },
   { id: "teams", label: "My Teams", icon: Users },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "live", label: "Live Activity", icon: Radio },
@@ -159,6 +161,8 @@ const Dashboard = () => {
         return <MyIdeas userId={user.id} />;
       case "collaborations":
         return <MyCollaborations userId={user.id} />;
+      case "requests":
+        return <JoinRequestsManager userId={user.id} />;
       case "teams":
         return <MyTeams userId={user.id} />;
       case "notifications":
