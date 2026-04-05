@@ -95,7 +95,7 @@ export const useIdeas = () => {
     if (!idea) return;
     const newVotes = (idea.upvotes || 0) + 1;
     setIdeas(prev => prev.map(i => i.id === ideaId ? { ...i, upvotes: newVotes } : i));
-    await supabase.from("ideas").update({ upvotes: newVotes }).eq("id", ideaId);
+    await supabase.rpc("increment_idea_upvotes", { _idea_id: ideaId });
   };
 
   return { ideas, loading, refetch: fetchIdeas, upvoteIdea };
