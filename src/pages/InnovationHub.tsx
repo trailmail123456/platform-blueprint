@@ -37,11 +37,11 @@ const InnovationHub = () => {
   const handleUpvote = (id: string) => {
     if (!user) { toast.error("Sign in to upvote"); return; }
     if (likedIds.has(id)) {
-      setLikedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
-    } else {
-      setLikedIds(prev => new Set(prev).add(id));
-      upvoteIdea(id);
+      // Already liked — ignore (upvote is a one-way action)
+      return;
     }
+    setLikedIds(prev => new Set(prev).add(id));
+    upvoteIdea(id);
   };
 
   const handlePost = () => {

@@ -115,11 +115,6 @@ export const IdeaLiveChat = ({ ideaId }: IdeaLiveChatProps) => {
         },
         async (payload) => {
           const msg = payload.new as ChatMessage;
-          // Don't duplicate if we already added optimistically
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === msg.id)) return prev;
-            return prev;
-          });
           const username = await getUsername(msg.user_id);
           setMessages((prev) => {
             if (prev.some((m) => m.id === msg.id)) return prev;

@@ -1181,6 +1181,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_idea_upvotes: { Args: { _idea_id: string }; Returns: undefined }
       increment_note_downloads: {
         Args: { _note_id: string }
         Returns: undefined
