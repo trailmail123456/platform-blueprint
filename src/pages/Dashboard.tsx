@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, BookOpen, Lightbulb, Users, Bell, Star,
-  ArrowRight, Handshake, Radio, User,
+  ArrowRight, Handshake, Radio, User, UserPlus,
   Calendar, Target, GraduationCap, MessageSquare, Briefcase,
   Flame, Award, TrendingUp,
 } from "lucide-react";
@@ -161,6 +161,8 @@ const Dashboard = () => {
         return <MyIdeas userId={user.id} />;
       case "collaborations":
         return <MyCollaborations userId={user.id} />;
+      case "requests":
+        return <JoinRequestsManager userId={user.id} />;
       case "teams":
         return <MyTeams userId={user.id} />;
       case "notifications":
