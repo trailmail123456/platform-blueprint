@@ -79,7 +79,7 @@ export const PostIdeaDialog = ({ open, onOpenChange }: PostIdeaDialogProps) => {
           </div>
           <div className="space-y-2">
             <Label>Description *</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your idea, the problem it solves, and your vision..." rows={4} />
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your idea, the problem it solves, and your vision..." rows={4} maxLength={2000} />
           </div>
           <div className="space-y-2">
             <Label>Category *</Label>
