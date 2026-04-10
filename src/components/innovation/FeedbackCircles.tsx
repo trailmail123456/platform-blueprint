@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Calendar, Star, MessageSquare, ChevronRight, UserPlus, Loader2 } from "lucide-react";
+import { RefreshCw, Calendar, Star, MessageSquare, ChevronRight, UserPlus, Loader2, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { ScrollReveal } from "@/components/animations/ScrollReveal";
@@ -52,6 +54,9 @@ export const FeedbackCircles = () => {
   const [feedbackRating, setFeedbackRating] = useState(4);
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
   const [feedbackTarget, setFeedbackTarget] = useState<CircleMember | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newCircle, setNewCircle] = useState({ name: "", topic: "", meeting_time: "", status: "upcoming" });
+  const [creating, setCreating] = useState(false);
 
   const fetchCircles = useCallback(async () => {
     setLoading(true);
@@ -163,6 +168,29 @@ export const FeedbackCircles = () => {
     toast.success(`Joined "${joinable.name}"!`);
   };
 
+  const handleCreateCircle = async () => {
+    if (!user) { toast.error("Sign in to create a circle"); return; }
+    if (!newCircle.name.trim() || !newCircle.topic.trim()) {
+      toast.error("Name and topic are required");
+      return;
+    }
+    setCreating(true);
+    const currentWeek = Math.ceil((new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
+    const { error } = await supabase.from("feedback_circles").insert({
+      name: newCircle.name.trim(),
+      topic: newCircle.topic.trim(),
+      meeting_time: newCircle.meeting_time.trim() || null,
+      status: newCircle.status,
+      week_number: currentWeek,
+      created_by: user.id,
+    });
+    setCreating(false);
+    if (error) { toast.error("Failed to create circle"); return; }
+    toast.success("Circle created!");
+    setCreateOpen(false);
+    setNewCircle({ name: "", topic: "", meeting_time: "", status: "upcoming" });
+  };
+
   const handleSubmitFeedback = async () => {
     if (!feedbackText.trim() || !feedbackTarget || !selectedCircle || !user) return;
 
@@ -193,10 +221,69 @@ export const FeedbackCircles = () => {
           </h2>
           <p className="text-muted-foreground">Get matched with 4-6 peers weekly for structured project feedback</p>
         </div>
-        <Button onClick={handleJoinCircle} className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          Join Next Circle
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleJoinCircle} variant="outline" className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            Join Next Circle
+          </Button>
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <PlusCircle className="h-4 w-4" />
+                Create Circle
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create a Feedback Circle</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Circle Name *</label>
+                  <Input
+                    placeholder="e.g. Innovation Circle D"
+                    value={newCircle.name}
+                    onChange={(e) => setNewCircle(prev => ({ ...prev, name: e.target.value }))}
+                    maxLength={100}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Topic *</label>
+                  <Input
+                    placeholder="e.g. MVP Validation"
+                    value={newCircle.topic}
+                    onChange={(e) => setNewCircle(prev => ({ ...prev, topic: e.target.value }))}
+                    maxLength={200}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Meeting Time</label>
+                  <Input
+                    placeholder="e.g. Wed 6:00 PM"
+                    value={newCircle.meeting_time}
+                    onChange={(e) => setNewCircle(prev => ({ ...prev, meeting_time: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Status</label>
+                  <Select value={newCircle.status} onValueChange={(val) => setNewCircle(prev => ({ ...prev, status: val }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={handleCreateCircle} className="w-full" disabled={creating || !newCircle.name.trim() || !newCircle.topic.trim()}>
+                  {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Create Circle
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* How it Works */}
