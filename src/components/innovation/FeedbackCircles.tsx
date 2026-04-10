@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Users, RefreshCw, Calendar, Star, MessageSquare, ChevronRight, UserPlus, Clock } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Users, RefreshCw, Calendar, Star, MessageSquare, ChevronRight, UserPlus, Clock, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,100 +10,173 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { ScrollReveal } from "@/components/animations/ScrollReveal";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CircleMember {
-  name: string;
-  avatar: string;
-  project: string;
+  user_id: string;
+  project_name: string | null;
   skills: string[];
+  profile?: { username: string | null; avatar_url: string | null };
 }
 
-interface FeedbackCircle {
+interface FeedbackCircleRow {
   id: string;
   name: string;
-  weekNumber: number;
-  members: CircleMember[];
-  status: "active" | "completed" | "upcoming";
   topic: string;
-  meetingTime: string;
+  meeting_time: string | null;
+  week_number: number;
+  status: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+interface FeedbackCircle extends FeedbackCircleRow {
+  members: CircleMember[];
   feedbackGiven: number;
   feedbackTotal: number;
 }
 
-const mockCircles: FeedbackCircle[] = [
-  {
-    id: "1",
-    name: "Innovation Circle A",
-    weekNumber: 12,
-    status: "active",
-    topic: "MVP Validation",
-    meetingTime: "Wed 6:00 PM",
-    feedbackGiven: 3,
-    feedbackTotal: 5,
-    members: [
-      { name: "Priya S.", avatar: "", project: "AI Study Buddy", skills: ["AI/ML", "Python"] },
-      { name: "Aman K.", avatar: "", project: "Smart Attendance", skills: ["IoT", "React"] },
-      { name: "Sneha T.", avatar: "", project: "Code Review Platform", skills: ["Full-Stack", "DevOps"] },
-      { name: "Rahul M.", avatar: "", project: "Campus Food Network", skills: ["Mobile", "UX"] },
-      { name: "Kavya R.", avatar: "", project: "Mental Health Bot", skills: ["NLP", "Psychology"] },
-    ],
-  },
-  {
-    id: "2",
-    name: "Innovation Circle B",
-    weekNumber: 12,
-    status: "upcoming",
-    topic: "User Research Findings",
-    meetingTime: "Thu 5:00 PM",
-    feedbackGiven: 0,
-    feedbackTotal: 4,
-    members: [
-      { name: "Vikram J.", avatar: "", project: "Campus Marketplace", skills: ["E-commerce", "React"] },
-      { name: "Neha P.", avatar: "", project: "Resume Optimizer", skills: ["AI", "Design"] },
-      { name: "Rohan D.", avatar: "", project: "Virtual Lab", skills: ["WebGL", "Physics"] },
-      { name: "Anita G.", avatar: "", project: "Study Planner", skills: ["Mobile", "UX"] },
-    ],
-  },
-  {
-    id: "3",
-    name: "Innovation Circle C",
-    weekNumber: 11,
-    status: "completed",
-    topic: "Pitch Deck Review",
-    meetingTime: "Tue 7:00 PM",
-    feedbackGiven: 6,
-    feedbackTotal: 6,
-    members: [
-      { name: "Dev P.", avatar: "", project: "EduGamify", skills: ["Gaming", "React"] },
-      { name: "Sara K.", avatar: "", project: "GreenCampus", skills: ["Sustainability", "Data"] },
-      { name: "Mohit L.", avatar: "", project: "PeerTutor", skills: ["EdTech", "Video"] },
-      { name: "Riya N.", avatar: "", project: "HealthTrack", skills: ["Health", "Mobile"] },
-      { name: "Arjun B.", avatar: "", project: "SkillBridge", skills: ["Career", "AI"] },
-      { name: "Pooja M.", avatar: "", project: "EventSync", skills: ["Events", "Full-Stack"] },
-    ],
-  },
-];
-
-const statusConfig = {
-  active: { label: "Active Now", variant: "default" as const, color: "bg-green-500" },
-  upcoming: { label: "Upcoming", variant: "secondary" as const, color: "bg-blue-500" },
-  completed: { label: "Completed", variant: "outline" as const, color: "bg-muted-foreground" },
+const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline"; color: string }> = {
+  active: { label: "Active Now", variant: "default", color: "bg-green-500" },
+  upcoming: { label: "Upcoming", variant: "secondary", color: "bg-blue-500" },
+  completed: { label: "Completed", variant: "outline", color: "bg-muted-foreground" },
 };
 
 export const FeedbackCircles = () => {
+  const { user } = useAuth();
+  const [circles, setCircles] = useState<FeedbackCircle[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCircle, setSelectedCircle] = useState<FeedbackCircle | null>(null);
   const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackRating, setFeedbackRating] = useState(4);
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
   const [feedbackTarget, setFeedbackTarget] = useState<CircleMember | null>(null);
 
-  const handleJoinCircle = () => {
-    toast.success("You've been added to the matching queue! You'll be matched with a circle by next Monday.");
+  const fetchCircles = useCallback(async () => {
+    setLoading(true);
+    const { data: circleRows } = await supabase
+      .from("feedback_circles")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (!circleRows || circleRows.length === 0) {
+      setCircles([]);
+      setLoading(false);
+      return;
+    }
+
+    const circleIds = circleRows.map(c => c.id);
+
+    // Fetch members for all circles
+    const { data: members } = await supabase
+      .from("feedback_circle_members")
+      .select("*")
+      .in("circle_id", circleIds);
+
+    // Fetch profiles
+    const userIds = [...new Set((members || []).map(m => m.user_id))];
+    const { data: profiles } = userIds.length > 0
+      ? await supabase.from("profiles").select("id, username, avatar_url").in("id", userIds)
+      : { data: [] };
+
+    // Fetch feedback counts per circle
+    const { data: feedbackCounts } = await supabase
+      .from("circle_feedback")
+      .select("circle_id")
+      .in("circle_id", circleIds);
+
+    const feedbackByCircle: Record<string, number> = {};
+    (feedbackCounts || []).forEach(f => {
+      feedbackByCircle[f.circle_id] = (feedbackByCircle[f.circle_id] || 0) + 1;
+    });
+
+    const enriched: FeedbackCircle[] = circleRows.map(circle => {
+      const circleMembers = (members || [])
+        .filter(m => m.circle_id === circle.id)
+        .map(m => ({
+          user_id: m.user_id,
+          project_name: m.project_name,
+          skills: m.skills || [],
+          profile: (profiles || []).find(p => p.id === m.user_id) || undefined,
+        }));
+      const memberCount = circleMembers.length;
+      // Total feedback possible = members * (members - 1) i.e. each member gives to every other
+      const feedbackTotal = memberCount > 1 ? memberCount * (memberCount - 1) : 1;
+      const feedbackGiven = feedbackByCircle[circle.id] || 0;
+
+      return { ...circle, members: circleMembers, feedbackGiven, feedbackTotal };
+    });
+
+    setCircles(enriched);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchCircles();
+
+    // Realtime subscriptions
+    const channel = supabase
+      .channel("feedback-circles-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "feedback_circles" }, () => fetchCircles())
+      .on("postgres_changes", { event: "*", schema: "public", table: "feedback_circle_members" }, () => fetchCircles())
+      .on("postgres_changes", { event: "*", schema: "public", table: "circle_feedback" }, () => fetchCircles())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchCircles]);
+
+  // Keep selectedCircle in sync with updated data
+  useEffect(() => {
+    if (selectedCircle) {
+      const updated = circles.find(c => c.id === selectedCircle.id);
+      if (updated) setSelectedCircle(updated);
+    }
+  }, [circles]);
+
+  const handleJoinCircle = async () => {
+    if (!user) { toast.error("Sign in to join a circle"); return; }
+
+    // Find an upcoming/active circle user hasn't joined
+    const joinable = circles.find(c =>
+      c.status !== "completed" && !c.members.some(m => m.user_id === user.id)
+    );
+
+    if (!joinable) {
+      toast.info("No open circles to join right now. Create one or check back later!");
+      return;
+    }
+
+    const { error } = await supabase.from("feedback_circle_members").insert({
+      circle_id: joinable.id,
+      user_id: user.id,
+      project_name: "My Project",
+      skills: [],
+    });
+
+    if (error) {
+      if (error.code === "23505") toast.info("You're already in this circle!");
+      else toast.error("Failed to join circle");
+      return;
+    }
+    toast.success(`Joined "${joinable.name}"!`);
   };
 
-  const handleSubmitFeedback = () => {
-    if (!feedbackText.trim()) return;
-    toast.success(`Feedback sent to ${feedbackTarget?.name}!`);
+  const handleSubmitFeedback = async () => {
+    if (!feedbackText.trim() || !feedbackTarget || !selectedCircle || !user) return;
+
+    const { error } = await supabase.from("circle_feedback").insert({
+      circle_id: selectedCircle.id,
+      from_user_id: user.id,
+      to_user_id: feedbackTarget.user_id,
+      content: feedbackText,
+      rating: feedbackRating,
+    });
+
+    if (error) { toast.error("Failed to submit feedback"); return; }
+    toast.success(`Feedback sent to ${feedbackTarget.profile?.username || "member"}!`);
     setFeedbackText("");
+    setFeedbackRating(4);
     setFeedbackDialogOpen(false);
     setFeedbackTarget(null);
   };
@@ -148,62 +221,76 @@ export const FeedbackCircles = () => {
         </CardContent>
       </Card>
 
-      {/* Circles Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockCircles.map((circle, i) => {
-          const config = statusConfig[circle.status];
-          return (
-            <ScrollReveal key={circle.id} delay={i * 0.1}>
-              <Card
-                className={`cursor-pointer transition-all hover:shadow-lg ${selectedCircle?.id === circle.id ? "ring-2 ring-primary" : ""}`}
-                onClick={() => setSelectedCircle(circle)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{circle.name}</CardTitle>
-                    <Badge variant={config.variant}>{config.label}</Badge>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    Week {circle.weekNumber} • {circle.meetingTime}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">This week's topic</p>
-                    <Badge variant="outline">{circle.topic}</Badge>
-                  </div>
-
-                  {/* Members */}
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-2">Members ({circle.members.length})</p>
-                    <div className="flex -space-x-2">
-                      {circle.members.map((member, j) => (
-                        <Avatar key={j} className="h-8 w-8 border-2 border-background">
-                          <AvatarFallback className="text-xs">{member.name[0]}</AvatarFallback>
-                        </Avatar>
-                      ))}
+      {/* Loading / Empty / Circles Grid */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : circles.length === 0 ? (
+        <div className="text-center py-16">
+          <RefreshCw className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
+          <h3 className="text-xl font-semibold mb-2">No circles yet</h3>
+          <p className="text-muted-foreground mb-6">Feedback circles will appear here once created.</p>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {circles.map((circle, i) => {
+            const config = statusConfig[circle.status] || statusConfig.upcoming;
+            return (
+              <ScrollReveal key={circle.id} delay={i * 0.1}>
+                <Card
+                  className={`cursor-pointer transition-all hover:shadow-lg ${selectedCircle?.id === circle.id ? "ring-2 ring-primary" : ""}`}
+                  onClick={() => setSelectedCircle(circle)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{circle.name}</CardTitle>
+                      <Badge variant={config.variant}>{config.label}</Badge>
                     </div>
-                  </div>
-
-                  {/* Feedback Progress */}
-                  <div>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-muted-foreground">Feedback Progress</span>
-                      <span className="font-medium">{circle.feedbackGiven}/{circle.feedbackTotal}</span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      Week {circle.week_number} {circle.meeting_time ? `• ${circle.meeting_time}` : ""}
                     </div>
-                    <Progress value={(circle.feedbackGiven / circle.feedbackTotal) * 100} className="h-1.5" />
-                  </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">This week's topic</p>
+                      <Badge variant="outline">{circle.topic}</Badge>
+                    </div>
 
-                  <Button variant="outline" size="sm" className="w-full gap-1">
-                    View Details <ChevronRight className="h-3 w-3" />
-                  </Button>
-                </CardContent>
-              </Card>
-            </ScrollReveal>
-          );
-        })}
-      </div>
+                    {/* Members */}
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Members ({circle.members.length})</p>
+                      <div className="flex -space-x-2">
+                        {circle.members.map((member, j) => (
+                          <Avatar key={j} className="h-8 w-8 border-2 border-background">
+                            <AvatarFallback className="text-xs">
+                              {(member.profile?.username || "U")[0].toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Feedback Progress */}
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">Feedback Progress</span>
+                        <span className="font-medium">{circle.feedbackGiven}/{circle.feedbackTotal}</span>
+                      </div>
+                      <Progress value={circle.feedbackTotal > 0 ? (circle.feedbackGiven / circle.feedbackTotal) * 100 : 0} className="h-1.5" />
+                    </div>
+
+                    <Button variant="outline" size="sm" className="w-full gap-1">
+                      View Details <ChevronRight className="h-3 w-3" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </ScrollReveal>
+            );
+          })}
+        </div>
+      )}
 
       {/* Selected Circle Detail */}
       <AnimatePresence>
@@ -217,92 +304,107 @@ export const FeedbackCircles = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>{selectedCircle.name} — Members</CardTitle>
-                  <Badge variant={statusConfig[selectedCircle.status].variant}>
-                    {statusConfig[selectedCircle.status].label}
+                  <Badge variant={(statusConfig[selectedCircle.status] || statusConfig.upcoming).variant}>
+                    {(statusConfig[selectedCircle.status] || statusConfig.upcoming).label}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {selectedCircle.members.map((member, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.05 }}
-                    >
-                      <Card className="bg-muted/30">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarFallback>{member.name[0]}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-sm">{member.name}</h4>
-                              <p className="text-xs text-muted-foreground">{member.project}</p>
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {member.skills.map((skill) => (
-                                  <Badge key={skill} variant="outline" className="text-[10px]">{skill}</Badge>
-                                ))}
-                              </div>
-                              <div className="flex gap-2 mt-3">
-                                <Dialog open={feedbackDialogOpen && feedbackTarget?.name === member.name} onOpenChange={(open) => {
-                                  setFeedbackDialogOpen(open);
-                                  if (!open) setFeedbackTarget(null);
-                                }}>
-                                  <DialogTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-xs gap-1 h-7"
-                                      onClick={() => setFeedbackTarget(member)}
-                                    >
-                                      <MessageSquare className="h-3 w-3" />
-                                      Give Feedback
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent>
-                                    <DialogHeader>
-                                      <DialogTitle>Feedback for {member.name}</DialogTitle>
-                                    </DialogHeader>
-                                    <div className="space-y-4 pt-2">
-                                      <div className="p-3 bg-muted/50 rounded-lg">
-                                        <p className="text-sm font-medium">Project: {member.project}</p>
-                                        <p className="text-xs text-muted-foreground mt-1">Topic: {selectedCircle.topic}</p>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <label className="text-sm font-medium">Your Feedback</label>
-                                        <Textarea
-                                          placeholder="Share constructive feedback on their project..."
-                                          value={feedbackText}
-                                          onChange={(e) => setFeedbackText(e.target.value)}
-                                          rows={5}
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <label className="text-sm font-medium">Rating</label>
-                                        <div className="flex gap-1">
-                                          {[1, 2, 3, 4, 5].map((star) => (
-                                            <Button key={star} variant="ghost" size="icon" className="h-8 w-8">
-                                              <Star className={`h-4 w-4 ${star <= 4 ? "fill-primary text-primary" : "text-muted-foreground"}`} />
-                                            </Button>
-                                          ))}
+                {selectedCircle.members.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No members in this circle yet.</p>
+                ) : (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedCircle.members.map((member, i) => (
+                      <motion.div
+                        key={member.user_id}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.05 }}
+                      >
+                        <Card className="bg-muted/30">
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                              <Avatar className="h-10 w-10">
+                                <AvatarFallback>
+                                  {(member.profile?.username || "U")[0].toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-sm">{member.profile?.username || "Anonymous"}</h4>
+                                <p className="text-xs text-muted-foreground">{member.project_name || "No project"}</p>
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {member.skills.map((skill) => (
+                                    <Badge key={skill} variant="outline" className="text-[10px]">{skill}</Badge>
+                                  ))}
+                                </div>
+                                {user && member.user_id !== user.id && (
+                                  <div className="flex gap-2 mt-3">
+                                    <Dialog open={feedbackDialogOpen && feedbackTarget?.user_id === member.user_id} onOpenChange={(open) => {
+                                      setFeedbackDialogOpen(open);
+                                      if (!open) setFeedbackTarget(null);
+                                    }}>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="text-xs gap-1 h-7"
+                                          onClick={() => setFeedbackTarget(member)}
+                                        >
+                                          <MessageSquare className="h-3 w-3" />
+                                          Give Feedback
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>Feedback for {member.profile?.username || "Member"}</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="space-y-4 pt-2">
+                                          <div className="p-3 bg-muted/50 rounded-lg">
+                                            <p className="text-sm font-medium">Project: {member.project_name || "N/A"}</p>
+                                            <p className="text-xs text-muted-foreground mt-1">Topic: {selectedCircle.topic}</p>
+                                          </div>
+                                          <div className="space-y-2">
+                                            <label className="text-sm font-medium">Your Feedback</label>
+                                            <Textarea
+                                              placeholder="Share constructive feedback on their project..."
+                                              value={feedbackText}
+                                              onChange={(e) => setFeedbackText(e.target.value)}
+                                              rows={5}
+                                              maxLength={2000}
+                                            />
+                                          </div>
+                                          <div className="space-y-2">
+                                            <label className="text-sm font-medium">Rating</label>
+                                            <div className="flex gap-1">
+                                              {[1, 2, 3, 4, 5].map((star) => (
+                                                <Button
+                                                  key={star}
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-8 w-8"
+                                                  onClick={() => setFeedbackRating(star)}
+                                                >
+                                                  <Star className={`h-4 w-4 ${star <= feedbackRating ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+                                                </Button>
+                                              ))}
+                                            </div>
+                                          </div>
+                                          <Button onClick={handleSubmitFeedback} className="w-full" disabled={!feedbackText.trim()}>
+                                            Submit Feedback
+                                          </Button>
                                         </div>
-                                      </div>
-                                      <Button onClick={handleSubmitFeedback} className="w-full">
-                                        Submit Feedback
-                                      </Button>
-                                    </div>
-                                  </DialogContent>
-                                </Dialog>
+                                      </DialogContent>
+                                    </Dialog>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
