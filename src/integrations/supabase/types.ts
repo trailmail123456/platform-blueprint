@@ -332,6 +332,44 @@ export type Database = {
           },
         ]
       }
+      circle_feedback: {
+        Row: {
+          circle_id: string
+          content: string
+          created_at: string
+          from_user_id: string
+          id: string
+          rating: number | null
+          to_user_id: string
+        }
+        Insert: {
+          circle_id: string
+          content: string
+          created_at?: string
+          from_user_id: string
+          id?: string
+          rating?: number | null
+          to_user_id: string
+        }
+        Update: {
+          circle_id?: string
+          content?: string
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          rating?: number | null
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_feedback_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_circles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_notes: {
         Row: {
           added_at: string
@@ -426,6 +464,77 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feedback_circle_members: {
+        Row: {
+          circle_id: string
+          id: string
+          joined_at: string
+          project_name: string | null
+          skills: string[] | null
+          user_id: string
+        }
+        Insert: {
+          circle_id: string
+          id?: string
+          joined_at?: string
+          project_name?: string | null
+          skills?: string[] | null
+          user_id: string
+        }
+        Update: {
+          circle_id?: string
+          id?: string
+          joined_at?: string
+          project_name?: string | null
+          skills?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_circle_members_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_circles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback_circles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          meeting_time: string | null
+          name: string
+          status: string
+          topic: string
+          updated_at: string
+          week_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          meeting_time?: string | null
+          name: string
+          status?: string
+          topic: string
+          updated_at?: string
+          week_number?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          meeting_time?: string | null
+          name?: string
+          status?: string
+          topic?: string
+          updated_at?: string
+          week_number?: number
+        }
+        Relationships: []
       }
       idea_messages: {
         Row: {
