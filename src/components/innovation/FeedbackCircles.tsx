@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Users, RefreshCw, Calendar, Star, MessageSquare, ChevronRight, UserPlus, Clock, Loader2 } from "lucide-react";
+import { RefreshCw, Calendar, Star, MessageSquare, ChevronRight, UserPlus, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,6 +132,7 @@ export const FeedbackCircles = () => {
       const updated = circles.find(c => c.id === selectedCircle.id);
       if (updated) setSelectedCircle(updated);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [circles]);
 
   const handleJoinCircle = async () => {
