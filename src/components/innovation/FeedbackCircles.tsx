@@ -226,8 +226,8 @@ export const FeedbackCircles = () => {
           <p className="text-muted-foreground">Get matched with 4-6 peers weekly for structured project feedback</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleJoinCircle} variant="outline" className="gap-2">
-            <UserPlus className="h-4 w-4" />
+          <Button onClick={handleJoinCircle} variant="outline" className="gap-2" disabled={joining}>
+            {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
             Join Next Circle
           </Button>
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
