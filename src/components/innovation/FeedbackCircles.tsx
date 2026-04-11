@@ -85,15 +85,13 @@ export const FeedbackCircles = () => {
       ? await supabase.from("profiles").select("id, username, avatar_url").in("id", userIds)
       : { data: [] };
 
-    // Fetch feedback counts per circle
+    // Fetch feedback counts per circle using security definer function
     const { data: feedbackCounts } = await supabase
-      .from("circle_feedback")
-      .select("circle_id")
-      .in("circle_id", circleIds);
+      .rpc("count_circle_feedback", { _circle_ids: circleIds });
 
     const feedbackByCircle: Record<string, number> = {};
-    (feedbackCounts || []).forEach(f => {
-      feedbackByCircle[f.circle_id] = (feedbackByCircle[f.circle_id] || 0) + 1;
+    (feedbackCounts || []).forEach((f: any) => {
+      feedbackByCircle[f.circle_id] = Number(f.feedback_count) || 0;
     });
 
     const enriched: FeedbackCircle[] = circleRows.map(circle => {

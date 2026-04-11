@@ -89,11 +89,10 @@ export const IdeaDetailDialog = ({ ideaId, open, onOpenChange }: IdeaDetailProps
   }, [ideaId, open]);
 
   const handleUpvote = async () => {
-    if (!user || !idea) return;
-    const newVotes = liked ? (idea.upvotes || 0) - 1 : (idea.upvotes || 0) + 1;
-    setLiked(!liked);
-    setIdea(prev => prev ? { ...prev, upvotes: newVotes } : null);
-    await supabase.from("ideas").update({ upvotes: Math.max(0, newVotes) }).eq("id", idea.id);
+    if (!user || !idea || liked) return;
+    setLiked(true);
+    setIdea(prev => prev ? { ...prev, upvotes: (prev.upvotes || 0) + 1 } : null);
+    await supabase.rpc("increment_idea_upvotes", { _idea_id: idea.id });
   };
 
   const statusColors: Record<string, string> = {
