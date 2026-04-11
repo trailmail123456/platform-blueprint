@@ -1283,6 +1283,13 @@ export type Database = {
         Args: { _note_id: string }
         Returns: number
       }
+      count_circle_feedback: {
+        Args: { _circle_ids: string[] }
+        Returns: {
+          circle_id: string
+          feedback_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
