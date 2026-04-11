@@ -57,6 +57,8 @@ export const FeedbackCircles = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [newCircle, setNewCircle] = useState({ name: "", topic: "", meeting_time: "", status: "upcoming" });
   const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
   const fetchCircles = useCallback(async () => {
     setLoading(true);
@@ -140,8 +142,8 @@ export const FeedbackCircles = () => {
 
   const handleJoinCircle = async () => {
     if (!user) { toast.error("Sign in to join a circle"); return; }
+    if (joining) return;
 
-    // Find an upcoming/active circle user hasn't joined
     const joinable = circles.find(c =>
       c.status !== "completed" && !c.members.some(m => m.user_id === user.id)
     );
@@ -151,12 +153,14 @@ export const FeedbackCircles = () => {
       return;
     }
 
+    setJoining(true);
     const { error } = await supabase.from("feedback_circle_members").insert({
       circle_id: joinable.id,
       user_id: user.id,
       project_name: "My Project",
       skills: [],
     });
+    setJoining(false);
 
     if (error) {
       if (error.code === "23505") toast.info("You're already in this circle!");
@@ -190,15 +194,17 @@ export const FeedbackCircles = () => {
   };
 
   const handleSubmitFeedback = async () => {
-    if (!feedbackText.trim() || !feedbackTarget || !selectedCircle || !user) return;
+    if (!feedbackText.trim() || !feedbackTarget || !selectedCircle || !user || submittingFeedback) return;
 
+    setSubmittingFeedback(true);
     const { error } = await supabase.from("circle_feedback").insert({
       circle_id: selectedCircle.id,
       from_user_id: user.id,
       to_user_id: feedbackTarget.user_id,
-      content: feedbackText,
+      content: feedbackText.trim(),
       rating: feedbackRating,
     });
+    setSubmittingFeedback(false);
 
     if (error) { toast.error("Failed to submit feedback"); return; }
     toast.success(`Feedback sent to ${feedbackTarget.profile?.username || "member"}!`);
@@ -220,8 +226,8 @@ export const FeedbackCircles = () => {
           <p className="text-muted-foreground">Get matched with 4-6 peers weekly for structured project feedback</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleJoinCircle} variant="outline" className="gap-2">
-            <UserPlus className="h-4 w-4" />
+          <Button onClick={handleJoinCircle} variant="outline" className="gap-2" disabled={joining}>
+            {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
             Join Next Circle
           </Button>
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -475,7 +481,8 @@ export const FeedbackCircles = () => {
                                               ))}
                                             </div>
                                           </div>
-                                          <Button onClick={handleSubmitFeedback} className="w-full" disabled={!feedbackText.trim()}>
+                                          <Button onClick={handleSubmitFeedback} className="w-full" disabled={!feedbackText.trim() || submittingFeedback}>
+                                            {submittingFeedback ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                                             Submit Feedback
                                           </Button>
                                         </div>

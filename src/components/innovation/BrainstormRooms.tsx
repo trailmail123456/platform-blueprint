@@ -58,8 +58,11 @@ export const BrainstormRooms = () => {
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const [creatingRoom, setCreatingRoom] = useState(false);
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const lastSendRef = useRef<number>(0);
+  const lastTypingRef = useRef<number>(0);
 
   const selectedRoom = rooms.find(r => r.id === selectedRoomId);
 
@@ -172,16 +175,21 @@ export const BrainstormRooms = () => {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !user || !selectedRoomId) return;
+    if (!newMessage.trim() || !user || !selectedRoomId || sending) return;
     if (selectedRoomId.startsWith("seed-")) {
       toast.error("Sign in and use a real room to send messages");
       return;
     }
+    const now = Date.now();
+    if (now - lastSendRef.current < 500) return; // Rate limit: 500ms between sends
+    lastSendRef.current = now;
+    const content = newMessage.trim();
+    if (content.length > 1000) { toast.error("Message too long (max 1000 chars)"); return; }
     setSending(true);
     const { error } = await supabase.from("brainstorm_messages").insert({
       room_id: selectedRoomId,
       user_id: user.id,
-      content: newMessage.trim(),
+      content,
     });
     if (error) {
       toast.error("Failed to send message");
@@ -198,7 +206,8 @@ export const BrainstormRooms = () => {
   };
 
   const handleCreateRoom = async () => {
-    if (!newRoom.name.trim() || !user) return;
+    if (!newRoom.name.trim() || !user || creatingRoom) return;
+    setCreatingRoom(true);
     const { error } = await supabase.from("brainstorm_rooms").insert({
       name: newRoom.name.trim(),
       topic: newRoom.name.trim().toLowerCase().replace(/\s+/g, "-"),
@@ -209,10 +218,10 @@ export const BrainstormRooms = () => {
       toast.error("Failed to create room");
     } else {
       toast.success(`Room "${newRoom.name}" created!`);
-      // Refetch rooms
       const { data } = await supabase.from("brainstorm_rooms").select("*").eq("is_active", true).order("participant_count", { ascending: false });
       if (data) setRooms(data);
     }
+    setCreatingRoom(false);
     setCreateOpen(false);
     setNewRoom({ name: "", description: "", topic: "" });
   };
@@ -240,7 +249,8 @@ export const BrainstormRooms = () => {
             <div className="space-y-4 pt-4">
               <Input placeholder="Room name" value={newRoom.name} onChange={e => setNewRoom(prev => ({ ...prev, name: e.target.value }))} maxLength={100} />
               <Textarea placeholder="Description" value={newRoom.description} onChange={e => setNewRoom(prev => ({ ...prev, description: e.target.value }))} maxLength={500} />
-              <Button onClick={handleCreateRoom} className="w-full" disabled={!user || !newRoom.name.trim()}>
+              <Button onClick={handleCreateRoom} className="w-full" disabled={!user || !newRoom.name.trim() || creatingRoom}>
+                {creatingRoom ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 {!user ? "Sign in to create" : "Create Room"}
               </Button>
             </div>
@@ -372,8 +382,11 @@ export const BrainstormRooms = () => {
                     value={newMessage}
                     onChange={e => {
                       setNewMessage(e.target.value);
-                      // Broadcast typing
-                      if (user && selectedRoomId) {
+                      // Throttled typing broadcast
+                      if (user && selectedRoomId && !selectedRoomId.startsWith("seed-")) {
+                        const now = Date.now();
+                        if (now - lastTypingRef.current < 2000) return;
+                        lastTypingRef.current = now;
                         const ch = supabase.channel(`room-${selectedRoomId}`);
                         ch.send({ type: "broadcast", event: "typing", payload: { userId: user.id, username: user.email?.split("@")[0] || "Anonymous" } });
                       }
@@ -382,6 +395,7 @@ export const BrainstormRooms = () => {
                     placeholder={user ? "Share your thoughts..." : "Sign in to chat"}
                     className="flex-1"
                     disabled={!user}
+                    maxLength={1000}
                   />
                   <Button onClick={sendMessage} disabled={!newMessage.trim() || !user || sending}>
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
