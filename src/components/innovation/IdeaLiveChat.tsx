@@ -42,6 +42,8 @@ export const IdeaLiveChat = ({ ideaId }: IdeaLiveChatProps) => {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notifCooldownRef = useRef<Record<string, number>>({});
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastSendRef = useRef<number>(0);
+  const lastTypingRef = useRef<number>(0);
 
   // Profile cache to avoid re-fetching
   const profileCache = useRef<Record<string, string>>({});
@@ -182,6 +184,9 @@ export const IdeaLiveChat = ({ ideaId }: IdeaLiveChatProps) => {
 
   const broadcastTyping = useCallback(() => {
     if (!channelRef.current || !user) return;
+    const now = Date.now();
+    if (now - lastTypingRef.current < 2000) return; // Throttle: max once per 2s
+    lastTypingRef.current = now;
     const username =
       user.email?.split("@")[0] ||
       user.user_metadata?.username ||
@@ -201,8 +206,12 @@ export const IdeaLiveChat = ({ ideaId }: IdeaLiveChatProps) => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage.trim() || !user || sending) return;
+    const now = Date.now();
+    if (now - lastSendRef.current < 500) return; // Rate limit: 500ms between sends
+    lastSendRef.current = now;
     const content = newMessage.trim();
+    if (content.length > 1000) { toast.error("Message too long (max 1000 chars)"); return; }
     setNewMessage("");
     setSending(true);
 
@@ -370,6 +379,7 @@ export const IdeaLiveChat = ({ ideaId }: IdeaLiveChatProps) => {
             placeholder={user ? "Type a message..." : "Sign in to chat"}
             className="flex-1 h-9 text-sm"
             disabled={!user}
+            maxLength={1000}
           />
           <Button
             size="sm"
