@@ -75,13 +75,13 @@ export const BrainstormRooms = () => {
       if (data && data.length > 0) {
         setRooms(data);
       } else {
-        // Use seed data as fallback display
+        // Use seed data as fallback display (no fake counts)
         setRooms(defaultRoomSeeds.map((r, i) => ({
           id: `seed-${i}`,
           ...r,
           is_active: true,
-          mentor_led: i === 2 || i === 4,
-          participant_count: Math.floor(Math.random() * 30) + 5,
+          mentor_led: false,
+          participant_count: 0,
           created_at: new Date().toISOString(),
         })));
       }
@@ -238,9 +238,9 @@ export const BrainstormRooms = () => {
               <DialogTitle>Create Brainstorm Room</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
-              <Input placeholder="Room name" value={newRoom.name} onChange={e => setNewRoom(prev => ({ ...prev, name: e.target.value }))} />
-              <Textarea placeholder="Description" value={newRoom.description} onChange={e => setNewRoom(prev => ({ ...prev, description: e.target.value }))} />
-              <Button onClick={handleCreateRoom} className="w-full" disabled={!user}>
+              <Input placeholder="Room name" value={newRoom.name} onChange={e => setNewRoom(prev => ({ ...prev, name: e.target.value }))} maxLength={100} />
+              <Textarea placeholder="Description" value={newRoom.description} onChange={e => setNewRoom(prev => ({ ...prev, description: e.target.value }))} maxLength={500} />
+              <Button onClick={handleCreateRoom} className="w-full" disabled={!user || !newRoom.name.trim()}>
                 {!user ? "Sign in to create" : "Create Room"}
               </Button>
             </div>
