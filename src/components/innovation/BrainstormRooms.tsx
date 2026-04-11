@@ -382,8 +382,11 @@ export const BrainstormRooms = () => {
                     value={newMessage}
                     onChange={e => {
                       setNewMessage(e.target.value);
-                      // Broadcast typing
-                      if (user && selectedRoomId) {
+                      // Throttled typing broadcast
+                      if (user && selectedRoomId && !selectedRoomId.startsWith("seed-")) {
+                        const now = Date.now();
+                        if (now - lastTypingRef.current < 2000) return;
+                        lastTypingRef.current = now;
                         const ch = supabase.channel(`room-${selectedRoomId}`);
                         ch.send({ type: "broadcast", event: "typing", payload: { userId: user.id, username: user.email?.split("@")[0] || "Anonymous" } });
                       }
@@ -392,6 +395,7 @@ export const BrainstormRooms = () => {
                     placeholder={user ? "Share your thoughts..." : "Sign in to chat"}
                     className="flex-1"
                     disabled={!user}
+                    maxLength={1000}
                   />
                   <Button onClick={sendMessage} disabled={!newMessage.trim() || !user || sending}>
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
