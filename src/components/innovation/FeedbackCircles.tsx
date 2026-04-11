@@ -481,7 +481,8 @@ export const FeedbackCircles = () => {
                                               ))}
                                             </div>
                                           </div>
-                                          <Button onClick={handleSubmitFeedback} className="w-full" disabled={!feedbackText.trim()}>
+                                          <Button onClick={handleSubmitFeedback} className="w-full" disabled={!feedbackText.trim() || submittingFeedback}>
+                                            {submittingFeedback ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                                             Submit Feedback
                                           </Button>
                                         </div>
