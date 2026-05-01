@@ -12,7 +12,7 @@ import { toast } from "sonner";
 interface JoinRequest {
   id: string;
   idea_id: string;
-  team_id: string;
+  team_id: string | null;
   user_id: string;
   message: string | null;
   requested_role: string | null;
