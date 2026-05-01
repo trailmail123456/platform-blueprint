@@ -12,7 +12,7 @@ import { toast } from "sonner";
 interface JoinRequest {
   id: string;
   idea_id: string;
-  team_id: string;
+  team_id: string | null;
   user_id: string;
   message: string | null;
   requested_role: string | null;
@@ -115,6 +115,28 @@ export const JoinRequestsManager = ({ userId }: { userId: string }) => {
   const handleAccept = async (req: JoinRequest) => {
     setProcessing(req.id);
     try {
+      // Ensure idea has a team; if not, create one and link it
+      let teamId = req.team_id;
+      if (!teamId) {
+        const { data: newTeam, error: teamErr } = await supabase
+          .from("teams")
+          .insert({ name: req.idea_title, description: `Team for ${req.idea_title}`, created_by: userId })
+          .select("id")
+          .single();
+        if (teamErr || !newTeam) throw teamErr || new Error("Team create failed");
+        teamId = newTeam.id;
+
+        // Link team to idea
+        await supabase.from("ideas").update({ team_id: teamId }).eq("id", req.idea_id);
+
+        // Add owner as founder
+        await supabase.from("team_members").insert({
+          team_id: teamId,
+          user_id: userId,
+          role: "founder" as any,
+        });
+      }
+
       // Update request status
       await supabase
         .from("join_requests")
@@ -125,10 +147,10 @@ export const JoinRequestsManager = ({ userId }: { userId: string }) => {
         })
         .eq("id", req.id);
 
-      // Add user to team
+      // Add user to team (ignore duplicate errors silently)
       const roleValue = req.requested_role || "developer";
       await supabase.from("team_members").insert({
-        team_id: req.team_id,
+        team_id: teamId,
         user_id: req.user_id,
         role: roleValue as any,
       });
@@ -139,7 +161,7 @@ export const JoinRequestsManager = ({ userId }: { userId: string }) => {
         title: "Join Request Accepted! 🎉",
         message: `Your request to join "${req.idea_title}" as ${roleValue} has been accepted.`,
         type: "team",
-        action_url: "/innovation-hub",
+        action_url: "/dashboard",
       });
 
       setRequests((prev) => prev.filter((r) => r.id !== req.id));

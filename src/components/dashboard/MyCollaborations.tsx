@@ -30,24 +30,22 @@ export const MyCollaborations = ({ userId }: { userId: string }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const fetch = async () => {
-      // Get teams user is member of (excluding ones they created)
       const { data: memberships } = await supabase
         .from("team_members")
         .select("team_id, role")
         .eq("user_id", userId);
 
+      if (cancelled) return;
+
       if (memberships && memberships.length > 0) {
         const teamIds = memberships.map(m => m.team_id);
-        const { data: teams } = await supabase
-          .from("teams")
-          .select("id, name")
-          .in("id", teamIds);
-
-        const { data: ideas } = await supabase
-          .from("ideas")
-          .select("team_id, title, category")
-          .in("team_id", teamIds);
+        const [{ data: teams }, { data: ideas }] = await Promise.all([
+          supabase.from("teams").select("id, name").in("id", teamIds),
+          supabase.from("ideas").select("team_id, title, category").in("team_id", teamIds),
+        ]);
+        if (cancelled) return;
 
         const result: Collaboration[] = memberships.map(m => {
           const team = teams?.find(t => t.id === m.team_id);
@@ -61,10 +59,21 @@ export const MyCollaborations = ({ userId }: { userId: string }) => {
           };
         });
         setCollabs(result);
+      } else {
+        setCollabs([]);
       }
       setLoading(false);
     };
     fetch();
+
+    const channel = supabase
+      .channel(`my-collabs-${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_members", filter: `user_id=eq.${userId}` }, fetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ideas" }, fetch)
+      .subscribe();
+
+    const pollId = setInterval(fetch, 30000);
+    return () => { cancelled = true; supabase.removeChannel(channel); clearInterval(pollId); };
   }, [userId]);
 
   return (

@@ -48,6 +48,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     const fetchStats = async () => {
       const [notesRes, ideasRes, teamsRes, notifsRes] = await Promise.all([
         supabase.from("notes").select("views, downloads, rating").eq("user_id", user.id),
@@ -55,6 +56,7 @@ const Dashboard = () => {
         supabase.from("team_members").select("*", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("is_read", false),
       ]);
+      if (cancelled) return;
       const notes = notesRes.data || [];
       const rated = notes.filter(n => Number(n.rating) > 0);
       setStats({
@@ -68,6 +70,24 @@ const Dashboard = () => {
       });
     };
     fetchStats();
+
+    // Real-time sync: refetch on any relevant change to user's data
+    const channel = supabase
+      .channel(`dashboard-stats-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ideas", filter: `user_id=eq.${user.id}` }, fetchStats)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notes", filter: `user_id=eq.${user.id}` }, fetchStats)
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_members", filter: `user_id=eq.${user.id}` }, fetchStats)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, fetchStats)
+      .subscribe();
+
+    // Polling fallback every 30s in case realtime drops
+    const pollId = setInterval(fetchStats, 30000);
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+      clearInterval(pollId);
+    };
   }, [user]);
 
   const quickLinks = [

@@ -32,6 +32,7 @@ export const MyIdeas = ({ userId }: { userId: string }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const fetch = async () => {
       const { data } = await supabase
         .from("ideas")
@@ -39,25 +40,36 @@ export const MyIdeas = ({ userId }: { userId: string }) => {
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
+      if (cancelled) return;
       if (data) {
         setIdeas(data);
-        // Fetch team member counts for ideas with teams
         const teamIds = data.filter(i => i.team_id).map(i => i.team_id!);
         if (teamIds.length > 0) {
           const { data: members } = await supabase
             .from("team_members")
             .select("team_id")
             .in("team_id", teamIds);
-          if (members) {
+          if (members && !cancelled) {
             const counts: Record<string, number> = {};
             members.forEach(m => { counts[m.team_id] = (counts[m.team_id] || 0) + 1; });
             setTeamCounts(counts);
           }
+        } else {
+          setTeamCounts({});
         }
       }
       setLoading(false);
     };
     fetch();
+
+    const channel = supabase
+      .channel(`my-ideas-${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ideas", filter: `user_id=eq.${userId}` }, fetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_members" }, fetch)
+      .subscribe();
+
+    const pollId = setInterval(fetch, 30000);
+    return () => { cancelled = true; supabase.removeChannel(channel); clearInterval(pollId); };
   }, [userId]);
 
   return (
