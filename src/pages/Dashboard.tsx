@@ -225,11 +225,14 @@ const Dashboard = () => {
               </h1>
               <p className="text-sm text-muted-foreground">Your single source of truth for all activity</p>
             </div>
-            {!user && (
-              <Link to="/auth">
-                <Button className="gap-2"><ArrowRight className="h-4 w-4" /> Sign In</Button>
-              </Link>
-            )}
+            <div className="flex items-center gap-3">
+              {user && <SyncStatusIndicator status={syncStatus} />}
+              {!user && (
+                <Link to="/auth">
+                  <Button className="gap-2"><ArrowRight className="h-4 w-4" /> Sign In</Button>
+                </Link>
+              )}
+            </div>
           </div>
         </ScrollReveal>
 
