@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Lightbulb, ThumbsUp, Users, ArrowRight, Plus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 
 interface Idea {
   id: string;
