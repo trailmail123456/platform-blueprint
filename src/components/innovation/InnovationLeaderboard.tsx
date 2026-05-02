@@ -49,11 +49,13 @@ const getRankBg = (rank: number) => {
 };
 
 export const InnovationLeaderboard = () => {
+  const { user } = useAuth();
   const [tab, setTab] = useState("ideas");
   const [topIdeas, setTopIdeas] = useState<TopIdea[]>([]);
   const [activeCreators, setActiveCreators] = useState<ActiveCreator[]>([]);
   const [stats, setStats] = useState<Stats>({ totalIdeas: 0, activeCreators: 0, thisWeek: 0 });
   const [loading, setLoading] = useState(true);
+  const [myRank, setMyRank] = useState<{ rank: number; total: number; upvotes: number; ideas: number } | null>(null);
 
   const fetchLeaderboard = useCallback(async () => {
     setLoading(true);
