@@ -107,9 +107,9 @@ export const InnovationLeaderboard = () => {
         if (new Date(idea.created_at) > oneWeekAgo) thisWeekCount++;
       });
 
-      const creatorEntries = Object.entries(creatorMap)
-        .sort((a, b) => b[1].upvotes - a[1].upvotes)
-        .slice(0, 10);
+      const sortedAll = Object.entries(creatorMap)
+        .sort((a, b) => b[1].upvotes - a[1].upvotes);
+      const creatorEntries = sortedAll.slice(0, 10);
 
       const creatorIds = creatorEntries.map(([uid]) => uid);
       const { data: creatorProfiles } = await supabase
@@ -130,25 +130,37 @@ export const InnovationLeaderboard = () => {
         activeCreators: Object.keys(creatorMap).length,
         thisWeek: thisWeekCount,
       });
+
+      // My rank — recomputed instantly on every realtime tick.
+      if (user) {
+        const myIndex = sortedAll.findIndex(([uid]) => uid === user.id);
+        if (myIndex >= 0) {
+          const [, mine] = sortedAll[myIndex];
+          setMyRank({ rank: myIndex + 1, total: sortedAll.length, upvotes: mine.upvotes, ideas: mine.ideas });
+        } else {
+          setMyRank(null);
+        }
+      } else {
+        setMyRank(null);
+      }
     } else {
       setActiveCreators([]);
       setStats({ totalIdeas: 0, activeCreators: 0, thisWeek: 0 });
+      setMyRank(null);
     }
 
     setLoading(false);
-  }, []);
+  }, [user]);
 
-  useEffect(() => {
-    fetchLeaderboard();
-
-    // Realtime: refresh when ideas change
-    const channel = supabase
-      .channel("leaderboard-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "ideas" }, () => fetchLeaderboard())
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [fetchLeaderboard]);
+  // Realtime: refresh on any ideas mutation (insert/update/delete) — covers
+  // upvotes, new ideas, and deletions. Polling fallback ensures we don't drift
+  // if the WebSocket stalls.
+  const syncStatus = useRealtimeSync({
+    channelName: "leaderboard-rt",
+    filters: [{ table: "ideas" }],
+    onChange: fetchLeaderboard,
+    pollIntervalMs: 25000,
+  });
 
   const maxUpvotes = topIdeas.length > 0 ? topIdeas[0].upvotes : 1;
 
