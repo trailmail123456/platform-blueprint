@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { SyncStatusIndicator } from "@/components/dashboard/SyncStatusIndicator";
 import { ScrollReveal } from "@/components/animations/ScrollReveal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,49 +48,42 @@ const Dashboard = () => {
     notesAvgRating: 0, ideasCount: 0, teamsCount: 0, notificationsCount: 0,
   });
 
-  useEffect(() => {
+  const fetchStats = useCallback(async () => {
     if (!user) return;
-    let cancelled = false;
-    const fetchStats = async () => {
-      const [notesRes, ideasRes, teamsRes, notifsRes] = await Promise.all([
-        supabase.from("notes").select("views, downloads, rating").eq("user_id", user.id),
-        supabase.from("ideas").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("team_members").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("is_read", false),
-      ]);
-      if (cancelled) return;
-      const notes = notesRes.data || [];
-      const rated = notes.filter(n => Number(n.rating) > 0);
-      setStats({
-        notesCount: notes.length,
-        notesViews: notes.reduce((s, n) => s + (n.views || 0), 0),
-        notesDownloads: notes.reduce((s, n) => s + (n.downloads || 0), 0),
-        notesAvgRating: rated.length > 0 ? rated.reduce((s, n) => s + Number(n.rating), 0) / rated.length : 0,
-        ideasCount: ideasRes.count || 0,
-        teamsCount: teamsRes.count || 0,
-        notificationsCount: notifsRes.count || 0,
-      });
-    };
-    fetchStats();
-
-    // Real-time sync: refetch on any relevant change to user's data
-    const channel = supabase
-      .channel(`dashboard-stats-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "ideas", filter: `user_id=eq.${user.id}` }, fetchStats)
-      .on("postgres_changes", { event: "*", schema: "public", table: "notes", filter: `user_id=eq.${user.id}` }, fetchStats)
-      .on("postgres_changes", { event: "*", schema: "public", table: "team_members", filter: `user_id=eq.${user.id}` }, fetchStats)
-      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, fetchStats)
-      .subscribe();
-
-    // Polling fallback every 30s in case realtime drops
-    const pollId = setInterval(fetchStats, 30000);
-
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-      clearInterval(pollId);
-    };
+    const [notesRes, ideasRes, teamsRes, notifsRes] = await Promise.all([
+      supabase.from("notes").select("views, downloads, rating").eq("user_id", user.id),
+      supabase.from("ideas").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("team_members").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("is_read", false),
+    ]);
+    const notes = notesRes.data || [];
+    const rated = notes.filter(n => Number(n.rating) > 0);
+    setStats({
+      notesCount: notes.length,
+      notesViews: notes.reduce((s, n) => s + (n.views || 0), 0),
+      notesDownloads: notes.reduce((s, n) => s + (n.downloads || 0), 0),
+      notesAvgRating: rated.length > 0 ? rated.reduce((s, n) => s + Number(n.rating), 0) / rated.length : 0,
+      ideasCount: ideasRes.count || 0,
+      teamsCount: teamsRes.count || 0,
+      notificationsCount: notifsRes.count || 0,
+    });
   }, [user]);
+
+  // Realtime subscriptions filtered to current user only — respects RLS scope.
+  const syncStatus = useRealtimeSync({
+    channelName: user ? `dashboard-stats-${user.id}` : undefined,
+    enabled: !!user,
+    filters: user
+      ? [
+          { table: "ideas", filter: `user_id=eq.${user.id}` },
+          { table: "notes", filter: `user_id=eq.${user.id}` },
+          { table: "team_members", filter: `user_id=eq.${user.id}` },
+          { table: "notifications", filter: `user_id=eq.${user.id}` },
+        ]
+      : [],
+    onChange: fetchStats,
+    pollIntervalMs: 30000,
+  });
 
   const quickLinks = [
     { title: "Notes Hub", href: "/notes", icon: BookOpen, desc: "Study materials", color: "text-primary" },
@@ -230,11 +225,14 @@ const Dashboard = () => {
               </h1>
               <p className="text-sm text-muted-foreground">Your single source of truth for all activity</p>
             </div>
-            {!user && (
-              <Link to="/auth">
-                <Button className="gap-2"><ArrowRight className="h-4 w-4" /> Sign In</Button>
-              </Link>
-            )}
+            <div className="flex items-center gap-3">
+              {user && <SyncStatusIndicator status={syncStatus} />}
+              {!user && (
+                <Link to="/auth">
+                  <Button className="gap-2"><ArrowRight className="h-4 w-4" /> Sign In</Button>
+                </Link>
+              )}
+            </div>
           </div>
         </ScrollReveal>
 

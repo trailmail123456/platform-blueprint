@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Trophy, Flame, Zap, TrendingUp, Medal, Crown, Star, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { SyncStatusIndicator } from "@/components/dashboard/SyncStatusIndicator";
 
 interface TopIdea {
   rank: number;
@@ -46,11 +49,13 @@ const getRankBg = (rank: number) => {
 };
 
 export const InnovationLeaderboard = () => {
+  const { user } = useAuth();
   const [tab, setTab] = useState("ideas");
   const [topIdeas, setTopIdeas] = useState<TopIdea[]>([]);
   const [activeCreators, setActiveCreators] = useState<ActiveCreator[]>([]);
   const [stats, setStats] = useState<Stats>({ totalIdeas: 0, activeCreators: 0, thisWeek: 0 });
   const [loading, setLoading] = useState(true);
+  const [myRank, setMyRank] = useState<{ rank: number; total: number; upvotes: number; ideas: number } | null>(null);
 
   const fetchLeaderboard = useCallback(async () => {
     setLoading(true);
@@ -102,9 +107,9 @@ export const InnovationLeaderboard = () => {
         if (new Date(idea.created_at) > oneWeekAgo) thisWeekCount++;
       });
 
-      const creatorEntries = Object.entries(creatorMap)
-        .sort((a, b) => b[1].upvotes - a[1].upvotes)
-        .slice(0, 10);
+      const sortedAll = Object.entries(creatorMap)
+        .sort((a, b) => b[1].upvotes - a[1].upvotes);
+      const creatorEntries = sortedAll.slice(0, 10);
 
       const creatorIds = creatorEntries.map(([uid]) => uid);
       const { data: creatorProfiles } = await supabase
@@ -125,37 +130,80 @@ export const InnovationLeaderboard = () => {
         activeCreators: Object.keys(creatorMap).length,
         thisWeek: thisWeekCount,
       });
+
+      // My rank — recomputed instantly on every realtime tick.
+      if (user) {
+        const myIndex = sortedAll.findIndex(([uid]) => uid === user.id);
+        if (myIndex >= 0) {
+          const [, mine] = sortedAll[myIndex];
+          setMyRank({ rank: myIndex + 1, total: sortedAll.length, upvotes: mine.upvotes, ideas: mine.ideas });
+        } else {
+          setMyRank(null);
+        }
+      } else {
+        setMyRank(null);
+      }
     } else {
       setActiveCreators([]);
       setStats({ totalIdeas: 0, activeCreators: 0, thisWeek: 0 });
+      setMyRank(null);
     }
 
     setLoading(false);
-  }, []);
+  }, [user]);
 
-  useEffect(() => {
-    fetchLeaderboard();
-
-    // Realtime: refresh when ideas change
-    const channel = supabase
-      .channel("leaderboard-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "ideas" }, () => fetchLeaderboard())
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [fetchLeaderboard]);
+  // Realtime: refresh on any ideas mutation (insert/update/delete) — covers
+  // upvotes, new ideas, and deletions. Polling fallback ensures we don't drift
+  // if the WebSocket stalls.
+  const syncStatus = useRealtimeSync({
+    channelName: "leaderboard-rt",
+    filters: [{ table: "ideas" }],
+    onChange: fetchLeaderboard,
+    pollIntervalMs: 25000,
+  });
 
   const maxUpvotes = topIdeas.length > 0 ? topIdeas[0].upvotes : 1;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Trophy className="h-7 w-7 text-primary" />
-        <div>
-          <h2 className="text-2xl font-bold">Innovation Leaderboard</h2>
-          <p className="text-muted-foreground">Top performers across the Innovation Hub</p>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Trophy className="h-7 w-7 text-primary" />
+          <div>
+            <h2 className="text-2xl font-bold">Innovation Leaderboard</h2>
+            <p className="text-muted-foreground">Top performers across the Innovation Hub</p>
+          </div>
         </div>
+        <SyncStatusIndicator status={syncStatus} />
       </div>
+
+      {/* My Rank — updates live as upvotes / ideas change */}
+      {user && myRank && (
+        <motion.div
+          key={`${myRank.rank}-${myRank.upvotes}`}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          data-testid="my-rank"
+        >
+          <Card className="border-primary/40 bg-gradient-to-r from-primary/5 to-accent/5">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                {getRankIcon(myRank.rank)}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">Your rank</p>
+                <p className="text-xl font-bold">
+                  #{myRank.rank} <span className="text-sm font-normal text-muted-foreground">of {myRank.total}</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm"><span className="font-bold text-primary">{myRank.upvotes}</span> upvotes</p>
+                <p className="text-xs text-muted-foreground">{myRank.ideas} idea{myRank.ideas === 1 ? "" : "s"}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
