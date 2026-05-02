@@ -166,13 +166,44 @@ export const InnovationLeaderboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Trophy className="h-7 w-7 text-primary" />
-        <div>
-          <h2 className="text-2xl font-bold">Innovation Leaderboard</h2>
-          <p className="text-muted-foreground">Top performers across the Innovation Hub</p>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Trophy className="h-7 w-7 text-primary" />
+          <div>
+            <h2 className="text-2xl font-bold">Innovation Leaderboard</h2>
+            <p className="text-muted-foreground">Top performers across the Innovation Hub</p>
+          </div>
         </div>
+        <SyncStatusIndicator status={syncStatus} />
       </div>
+
+      {/* My Rank — updates live as upvotes / ideas change */}
+      {user && myRank && (
+        <motion.div
+          key={`${myRank.rank}-${myRank.upvotes}`}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          data-testid="my-rank"
+        >
+          <Card className="border-primary/40 bg-gradient-to-r from-primary/5 to-accent/5">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                {getRankIcon(myRank.rank)}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">Your rank</p>
+                <p className="text-xl font-bold">
+                  #{myRank.rank} <span className="text-sm font-normal text-muted-foreground">of {myRank.total}</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm"><span className="font-bold text-primary">{myRank.upvotes}</span> upvotes</p>
+                <p className="text-xs text-muted-foreground">{myRank.ideas} idea{myRank.ideas === 1 ? "" : "s"}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
