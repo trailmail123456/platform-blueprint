@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { SyncStatusIndicator } from "@/components/dashboard/SyncStatusIndicator";
 import { ScrollReveal } from "@/components/animations/ScrollReveal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
