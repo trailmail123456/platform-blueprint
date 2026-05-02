@@ -32,46 +32,44 @@ export const MyIdeas = ({ userId }: { userId: string }) => {
   const [teamCounts, setTeamCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetch = async () => {
-      const { data } = await supabase
-        .from("ideas")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+  const fetchIdeas = useCallback(async () => {
+    const { data } = await supabase
+      .from("ideas")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
-      if (cancelled) return;
-      if (data) {
-        setIdeas(data);
-        const teamIds = data.filter(i => i.team_id).map(i => i.team_id!);
-        if (teamIds.length > 0) {
-          const { data: members } = await supabase
-            .from("team_members")
-            .select("team_id")
-            .in("team_id", teamIds);
-          if (members && !cancelled) {
-            const counts: Record<string, number> = {};
-            members.forEach(m => { counts[m.team_id] = (counts[m.team_id] || 0) + 1; });
-            setTeamCounts(counts);
-          }
-        } else {
-          setTeamCounts({});
+    if (data) {
+      setIdeas(data);
+      const teamIds = data.filter(i => i.team_id).map(i => i.team_id!);
+      if (teamIds.length > 0) {
+        const { data: members } = await supabase
+          .from("team_members")
+          .select("team_id")
+          .in("team_id", teamIds);
+        if (members) {
+          const counts: Record<string, number> = {};
+          members.forEach(m => { counts[m.team_id] = (counts[m.team_id] || 0) + 1; });
+          setTeamCounts(counts);
         }
+      } else {
+        setTeamCounts({});
       }
-      setLoading(false);
-    };
-    fetch();
-
-    const channel = supabase
-      .channel(`my-ideas-${userId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "ideas", filter: `user_id=eq.${userId}` }, fetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "team_members" }, fetch)
-      .subscribe();
-
-    const pollId = setInterval(fetch, 30000);
-    return () => { cancelled = true; supabase.removeChannel(channel); clearInterval(pollId); };
+    }
+    setLoading(false);
   }, [userId]);
+
+  // Subscribe only to rows the user owns (RLS-aligned).
+  useRealtimeSync({
+    channelName: `my-ideas-${userId}`,
+    filters: [
+      { table: "ideas", filter: `user_id=eq.${userId}` },
+      // team_members has no per-team filter we can pre-compute cheaply,
+      // but we scope to memberships involving this user to stay RLS-relevant.
+      { table: "team_members", filter: `user_id=eq.${userId}` },
+    ],
+    onChange: fetchIdeas,
+  });
 
   return (
     <Card>
