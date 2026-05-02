@@ -93,25 +93,18 @@ export const JoinRequestsManager = ({ userId }: { userId: string }) => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchRequests();
-
-    // Realtime subscription for new requests
-    const channel = supabase
-      .channel("dashboard-join-requests")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "join_requests" },
-        () => {
-          fetchRequests();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId]);
+  // Subscribe to join_requests changes. RLS policy already restricts visibility
+  // to idea owners + the requester themselves, so postgres_changes will only
+  // deliver rows this user is authorized to see.
+  useRealtimeSync({
+    channelName: `dashboard-join-requests-${userId}`,
+    filters: [
+      { table: "join_requests" },
+      // refetch when user creates/deletes ideas (changes the in-list filter)
+      { table: "ideas", filter: `user_id=eq.${userId}` },
+    ],
+    onChange: fetchRequests,
+  });
 
   const handleAccept = async (req: JoinRequest) => {
     setProcessing(req.id);
