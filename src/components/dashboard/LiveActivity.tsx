@@ -29,31 +29,27 @@ export const LiveActivity = () => {
   const [sessions, setSessions] = useState<ActiveSession[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetch = async () => {
-      const [roomsRes, sessionsRes] = await Promise.all([
-        supabase.from("brainstorm_rooms").select("id, name, topic, icon, participant_count, mentor_led").eq("is_active", true).limit(5),
-        supabase.from("ama_sessions").select("id, title, topic, status, participant_count").eq("status", "live").limit(5),
-      ]);
-      if (cancelled) return;
-      setRooms(roomsRes.data || []);
-      setSessions(sessionsRes.data || []);
-      setLoading(false);
-    };
-    fetch();
-
-    const channel = supabase
-      .channel("dashboard-live-activity")
-      .on("postgres_changes", { event: "*", schema: "public", table: "brainstorm_rooms" }, fetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "brainstorm_participants" }, fetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "ama_participants" }, fetch)
-      .subscribe();
-
-    // Polling fallback (ama_sessions not in realtime publication)
-    const pollId = setInterval(fetch, 20000);
-    return () => { cancelled = true; supabase.removeChannel(channel); clearInterval(pollId); };
+  const fetchActivity = useCallback(async () => {
+    const [roomsRes, sessionsRes] = await Promise.all([
+      supabase.from("brainstorm_rooms").select("id, name, topic, icon, participant_count, mentor_led").eq("is_active", true).limit(5),
+      supabase.from("ama_sessions").select("id, title, topic, status, participant_count").eq("status", "live").limit(5),
+    ]);
+    setRooms(roomsRes.data || []);
+    setSessions(sessionsRes.data || []);
+    setLoading(false);
   }, []);
+
+  // Public live data — no per-user filter required (RLS allows all to read).
+  useRealtimeSync({
+    channelName: "dashboard-live-activity",
+    filters: [
+      { table: "brainstorm_rooms" },
+      { table: "brainstorm_participants" },
+      { table: "ama_participants" },
+    ],
+    onChange: fetchActivity,
+    pollIntervalMs: 20000, // ama_sessions not in realtime publication
+  });
 
   const hasActivity = rooms.length > 0 || sessions.length > 0;
 
