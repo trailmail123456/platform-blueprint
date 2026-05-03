@@ -36,13 +36,18 @@ export const JoinRequestsManager = ({ userId }: { userId: string }) => {
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [ideaIds, setIdeaIds] = useState<string[]>([]);
 
   const fetchRequests = async () => {
-    // Get user's ideas
     const { data: ideas } = await supabase
       .from("ideas")
       .select("id, title, team_id")
       .eq("user_id", userId);
+
+    const nextIds = (ideas || []).map((i) => i.id).sort();
+    setIdeaIds((prev) =>
+      prev.length === nextIds.length && prev.every((v, i) => v === nextIds[i]) ? prev : nextIds
+    );
 
     if (!ideas || ideas.length === 0) {
       setRequests([]);
@@ -50,11 +55,10 @@ export const JoinRequestsManager = ({ userId }: { userId: string }) => {
       return;
     }
 
-    const ideaIds = ideas.map((i) => i.id);
     const { data: reqs } = await supabase
       .from("join_requests")
       .select("*")
-      .in("idea_id", ideaIds)
+      .in("idea_id", nextIds)
       .eq("status", "pending")
       .order("created_at", { ascending: false });
 
@@ -64,7 +68,6 @@ export const JoinRequestsManager = ({ userId }: { userId: string }) => {
       return;
     }
 
-    // Get applicant profiles
     const userIds = [...new Set(reqs.map((r) => r.user_id))];
     const { data: profiles } = await supabase
       .from("profiles")
@@ -93,17 +96,22 @@ export const JoinRequestsManager = ({ userId }: { userId: string }) => {
     setLoading(false);
   };
 
-  // Subscribe to join_requests changes. RLS policy already restricts visibility
-  // to idea owners + the requester themselves, so postgres_changes will only
-  // deliver rows this user is authorized to see.
+  // Tightened subscription: one filter per owned idea_id (Supabase realtime
+  // filters only support eq/neq/lt/lte/gt/gte — no `in()`), so we register one
+  // postgres_changes filter per idea. RLS already restricts visibility, but
+  // narrowing here drops irrelevant broadcasts on the wire. The `ideas` filter
+  // refreshes the subscription set when the user creates/deletes ideas.
+  useEffect(() => { void fetchRequests(); /* initial load before any realtime */ // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
   useRealtimeSync({
-    channelName: `dashboard-join-requests-${userId}`,
+    channelName: `dashboard-join-requests-${userId}-${ideaIds.length}`,
     filters: [
-      { table: "join_requests" },
-      // refetch when user creates/deletes ideas (changes the in-list filter)
+      ...ideaIds.map((id) => ({ table: "join_requests", filter: `idea_id=eq.${id}` })),
       { table: "ideas", filter: `user_id=eq.${userId}` },
     ],
     onChange: fetchRequests,
+    enabled: ideaIds.length > 0 || !loading,
   });
 
   const handleAccept = async (req: JoinRequest) => {
