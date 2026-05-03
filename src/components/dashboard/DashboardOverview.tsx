@@ -29,13 +29,13 @@ const links = ["/notes", "/notes", "/notes", "/notes", "/innovation-hub", "/team
 
 export const DashboardOverview = ({ stats }: { stats: Stats }) => {
   const items = [
-    { label: "My Notes", value: stats.notesCount },
-    { label: "Note Views", value: stats.notesViews },
-    { label: "Downloads", value: stats.notesDownloads },
-    { label: "Avg Rating", value: stats.notesAvgRating.toFixed(1) },
-    { label: "My Ideas", value: stats.ideasCount },
-    { label: "My Teams", value: stats.teamsCount },
-    { label: "Notifications", value: stats.notificationsCount },
+    { key: "notes", label: "My Notes", value: stats.notesCount },
+    { key: "views", label: "Note Views", value: stats.notesViews },
+    { key: "downloads", label: "Downloads", value: stats.notesDownloads },
+    { key: "rating", label: "Avg Rating", value: stats.notesAvgRating.toFixed(1) },
+    { key: "ideas", label: "My Ideas", value: stats.ideasCount },
+    { key: "teams", label: "My Teams", value: stats.teamsCount },
+    { key: "notifications", label: "Notifications", value: stats.notificationsCount },
   ];
 
   return (
