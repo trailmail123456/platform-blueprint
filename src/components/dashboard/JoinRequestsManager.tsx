@@ -111,7 +111,6 @@ export const JoinRequestsManager = ({ userId }: { userId: string }) => {
       { table: "ideas", filter: `user_id=eq.${userId}` },
     ],
     onChange: fetchRequests,
-    enabled: ideaIds.length > 0 || !loading,
   });
 
   const handleAccept = async (req: JoinRequest) => {
