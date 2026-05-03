@@ -51,7 +51,13 @@ export const DashboardOverview = ({ stats }: { stats: Stats }) => {
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="text-xl font-bold">{stat.value}</div>
+                    <div
+                      className="text-xl font-bold"
+                      data-testid={`stat-${stat.key}`}
+                      data-value={stat.value}
+                    >
+                      {stat.value}
+                    </div>
                     <div className="text-xs text-muted-foreground">{stat.label}</div>
                   </div>
                 </CardContent>
