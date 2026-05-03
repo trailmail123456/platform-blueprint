@@ -58,14 +58,13 @@ export const InnovationLeaderboard = () => {
   const [myRank, setMyRank] = useState<{ rank: number; total: number; upvotes: number; ideas: number } | null>(null);
 
   const fetchLeaderboard = useCallback(async () => {
-    setLoading(true);
-
-    // Fetch top ideas by upvotes
+    // Fetch top ideas by upvotes (deterministic tiebreaker on id to prevent flicker)
     const { data: ideas } = await supabase
       .from("ideas")
       .select("id, title, category, upvotes, user_id")
       .eq("is_public", true)
       .order("upvotes", { ascending: false })
+      .order("id", { ascending: true })
       .limit(10);
 
     if (ideas && ideas.length > 0) {
@@ -75,16 +74,24 @@ export const InnovationLeaderboard = () => {
         .select("id, username")
         .in("id", userIds);
 
-      setTopIdeas(ideas.map((idea, idx) => ({
+      const nextTop = ideas.map((idea, idx) => ({
         rank: idx + 1,
         id: idea.id,
         title: idea.title,
         author: (profiles || []).find(p => p.id === idea.user_id)?.username || "Anonymous",
         upvotes: idea.upvotes || 0,
         category: idea.category,
-      })));
+      }));
+      // Only update affected rows to minimize re-renders / flicker
+      setTopIdeas(prev => {
+        if (
+          prev.length === nextTop.length &&
+          prev.every((p, i) => p.id === nextTop[i].id && p.upvotes === nextTop[i].upvotes && p.rank === nextTop[i].rank)
+        ) return prev;
+        return nextTop;
+      });
     } else {
-      setTopIdeas([]);
+      setTopIdeas(prev => (prev.length === 0 ? prev : []));
     }
 
     // Fetch all public ideas to compute creator stats
@@ -94,7 +101,6 @@ export const InnovationLeaderboard = () => {
       .eq("is_public", true);
 
     if (allIdeas && allIdeas.length > 0) {
-      // Aggregate by user
       const creatorMap: Record<string, { ideas: number; upvotes: number }> = {};
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -107,8 +113,12 @@ export const InnovationLeaderboard = () => {
         if (new Date(idea.created_at) > oneWeekAgo) thisWeekCount++;
       });
 
-      const sortedAll = Object.entries(creatorMap)
-        .sort((a, b) => b[1].upvotes - a[1].upvotes);
+      // Deterministic sort: upvotes desc, ideas desc, user_id asc
+      const sortedAll = Object.entries(creatorMap).sort((a, b) => {
+        if (b[1].upvotes !== a[1].upvotes) return b[1].upvotes - a[1].upvotes;
+        if (b[1].ideas !== a[1].ideas) return b[1].ideas - a[1].ideas;
+        return a[0].localeCompare(b[0]);
+      });
       const creatorEntries = sortedAll.slice(0, 10);
 
       const creatorIds = creatorEntries.map(([uid]) => uid);
@@ -117,36 +127,55 @@ export const InnovationLeaderboard = () => {
         .select("id, username")
         .in("id", creatorIds);
 
-      setActiveCreators(creatorEntries.map(([uid, data], idx) => ({
+      const nextCreators = creatorEntries.map(([uid, data], idx) => ({
         rank: idx + 1,
         user_id: uid,
         name: (creatorProfiles || []).find(p => p.id === uid)?.username || "Anonymous",
         ideas: data.ideas,
         upvotes: data.upvotes,
-      })));
-
-      setStats({
-        totalIdeas: allIdeas.length,
-        activeCreators: Object.keys(creatorMap).length,
-        thisWeek: thisWeekCount,
+      }));
+      setActiveCreators(prev => {
+        if (
+          prev.length === nextCreators.length &&
+          prev.every((p, i) =>
+            p.user_id === nextCreators[i].user_id &&
+            p.upvotes === nextCreators[i].upvotes &&
+            p.ideas === nextCreators[i].ideas &&
+            p.rank === nextCreators[i].rank
+          )
+        ) return prev;
+        return nextCreators;
       });
 
-      // My rank — recomputed instantly on every realtime tick.
+      setStats(prev => {
+        const next = {
+          totalIdeas: allIdeas.length,
+          activeCreators: Object.keys(creatorMap).length,
+          thisWeek: thisWeekCount,
+        };
+        if (prev.totalIdeas === next.totalIdeas && prev.activeCreators === next.activeCreators && prev.thisWeek === next.thisWeek) return prev;
+        return next;
+      });
+
       if (user) {
         const myIndex = sortedAll.findIndex(([uid]) => uid === user.id);
         if (myIndex >= 0) {
           const [, mine] = sortedAll[myIndex];
-          setMyRank({ rank: myIndex + 1, total: sortedAll.length, upvotes: mine.upvotes, ideas: mine.ideas });
+          setMyRank(prev => {
+            const next = { rank: myIndex + 1, total: sortedAll.length, upvotes: mine.upvotes, ideas: mine.ideas };
+            if (prev && prev.rank === next.rank && prev.total === next.total && prev.upvotes === next.upvotes && prev.ideas === next.ideas) return prev;
+            return next;
+          });
         } else {
-          setMyRank(null);
+          setMyRank(prev => (prev === null ? prev : null));
         }
       } else {
-        setMyRank(null);
+        setMyRank(prev => (prev === null ? prev : null));
       }
     } else {
-      setActiveCreators([]);
-      setStats({ totalIdeas: 0, activeCreators: 0, thisWeek: 0 });
-      setMyRank(null);
+      setActiveCreators(prev => (prev.length === 0 ? prev : []));
+      setStats(prev => (prev.totalIdeas === 0 && prev.activeCreators === 0 && prev.thisWeek === 0 ? prev : { totalIdeas: 0, activeCreators: 0, thisWeek: 0 }));
+      setMyRank(prev => (prev === null ? prev : null));
     }
 
     setLoading(false);

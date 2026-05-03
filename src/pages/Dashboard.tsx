@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { useSyncStatusToast } from "@/hooks/useSyncStatusToast";
 import { SyncStatusIndicator } from "@/components/dashboard/SyncStatusIndicator";
 import { ScrollReveal } from "@/components/animations/ScrollReveal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,6 +85,7 @@ const Dashboard = () => {
     onChange: fetchStats,
     pollIntervalMs: 30000,
   });
+  useSyncStatusToast(syncStatus, "Dashboard sync");
 
   const quickLinks = [
     { title: "Notes Hub", href: "/notes", icon: BookOpen, desc: "Study materials", color: "text-primary" },

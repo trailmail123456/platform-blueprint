@@ -29,13 +29,13 @@ const links = ["/notes", "/notes", "/notes", "/notes", "/innovation-hub", "/team
 
 export const DashboardOverview = ({ stats }: { stats: Stats }) => {
   const items = [
-    { label: "My Notes", value: stats.notesCount },
-    { label: "Note Views", value: stats.notesViews },
-    { label: "Downloads", value: stats.notesDownloads },
-    { label: "Avg Rating", value: stats.notesAvgRating.toFixed(1) },
-    { label: "My Ideas", value: stats.ideasCount },
-    { label: "My Teams", value: stats.teamsCount },
-    { label: "Notifications", value: stats.notificationsCount },
+    { key: "notes", label: "My Notes", value: stats.notesCount },
+    { key: "views", label: "Note Views", value: stats.notesViews },
+    { key: "downloads", label: "Downloads", value: stats.notesDownloads },
+    { key: "rating", label: "Avg Rating", value: stats.notesAvgRating.toFixed(1) },
+    { key: "ideas", label: "My Ideas", value: stats.ideasCount },
+    { key: "teams", label: "My Teams", value: stats.teamsCount },
+    { key: "notifications", label: "Notifications", value: stats.notificationsCount },
   ];
 
   return (
@@ -51,7 +51,13 @@ export const DashboardOverview = ({ stats }: { stats: Stats }) => {
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="text-xl font-bold">{stat.value}</div>
+                    <div
+                      className="text-xl font-bold"
+                      data-testid={`stat-${stat.key}`}
+                      data-value={stat.value}
+                    >
+                      {stat.value}
+                    </div>
                     <div className="text-xs text-muted-foreground">{stat.label}</div>
                   </div>
                 </CardContent>

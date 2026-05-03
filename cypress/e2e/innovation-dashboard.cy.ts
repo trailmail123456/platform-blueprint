@@ -33,14 +33,13 @@ describe("Innovation Hub ↔ Dashboard real-time sync", () => {
     cy.loginAs(A_EMAIL, A_PASS);
     cy.visit("/dashboard");
 
-    // Capture baseline idea count from the dashboard overview card
-    cy.contains(/My Ideas/i)
-      .parent()
-      .invoke("text")
-      .then((text) => {
-        const baseline = parseInt(text.match(/(\d+)/)?.[1] || "0", 10);
-        cy.wrap(baseline).as("baselineIdeasA");
-      });
+    // Capture baseline counters from data-value attributes (no parsing needed)
+    cy.get('[data-testid="stat-ideas"]', { timeout: 15000 })
+      .invoke("attr", "data-value")
+      .then((v) => cy.wrap(parseInt(v || "0", 10)).as("baselineIdeasA"));
+    cy.get('[data-testid="stat-notifications"]')
+      .invoke("attr", "data-value")
+      .then((v) => cy.wrap(parseInt(v || "0", 10)).as("baselineNotifsA"));
 
     // Sync indicator must be present and reach a healthy state
     cy.get('[data-testid="sync-status"]', { timeout: 15000 })
@@ -58,15 +57,13 @@ describe("Innovation Hub ↔ Dashboard real-time sync", () => {
     // Confirm idea exists in the public feed
     cy.contains(IDEA_TITLE, { timeout: 15000 }).should("be.visible");
 
-    // Without manual reload, dashboard count should increment
+    // Without manual reload, dashboard idea counter should increment
     cy.visit("/dashboard");
     cy.get<number>("@baselineIdeasA").then((baseline) => {
-      cy.contains(/My Ideas/i)
-        .parent()
-        .should(($el) => {
-          const n = parseInt($el.text().match(/(\d+)/)?.[1] || "0", 10);
-          expect(n).to.be.gte(baseline + 1);
-        });
+      cy.get('[data-testid="stat-ideas"]', { timeout: 20000 }).should(($el) => {
+        const n = parseInt($el.attr("data-value") || "0", 10);
+        expect(n).to.be.gte(baseline + 1);
+      });
     });
 
     // ---------- USER B: view, comment, join ----------
@@ -93,6 +90,17 @@ describe("Innovation Hub ↔ Dashboard real-time sync", () => {
     cy.loginAs(A_EMAIL, A_PASS);
     cy.visit("/dashboard");
 
+    // Capture notification baseline (should rise after acceptance triggers a notif to B,
+    // and A's own notifications may also bump from comment events depending on triggers).
+    cy.get('[data-testid="stat-notifications"]')
+      .invoke("attr", "data-value")
+      .then((v) => cy.wrap(parseInt(v || "0", 10)).as("notifsBeforeAccept"));
+
+    // Capture teams baseline before accepting (should increment when A is auto-added as founder)
+    cy.get('[data-testid="stat-teams"]')
+      .invoke("attr", "data-value")
+      .then((v) => cy.wrap(parseInt(v || "0", 10)).as("teamsBeforeAccept"));
+
     // Navigate to Join Requests panel — request should appear via realtime
     cy.contains("button", /join requests/i).click();
     cy.contains(IDEA_TITLE, { timeout: 20000 }).should("be.visible");
@@ -102,6 +110,14 @@ describe("Innovation Hub ↔ Dashboard real-time sync", () => {
     cy.contains(IDEA_TITLE).should("not.exist");
     cy.contains("button", /collaborations/i).click();
     cy.contains(IDEA_TITLE, { timeout: 20000 }).should("be.visible");
+
+    // Teams counter should bump without refresh (A becomes founder of new team)
+    cy.get<number>("@teamsBeforeAccept").then((baseline) => {
+      cy.get('[data-testid="stat-teams"]', { timeout: 20000 }).should(($el) => {
+        const n = parseInt($el.attr("data-value") || "0", 10);
+        expect(n).to.be.gte(baseline + 1);
+      });
+    });
   });
 
   it("dashboard sync indicator transitions through valid states", () => {
