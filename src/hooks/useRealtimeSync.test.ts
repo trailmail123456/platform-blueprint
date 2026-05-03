@@ -42,20 +42,20 @@ describe("useRealtimeSync", () => {
     expect(result.current).toBe("connecting");
   });
 
-  it("transitions to 'live' when channel SUBSCRIBED", async () => {
+  it("transitions to 'live' when channel SUBSCRIBED", () => {
     const { result } = renderHook(() =>
       useRealtimeSync({ filters: [{ table: "ideas" }], onChange: vi.fn() })
     );
     act(() => subscribeCb?.("SUBSCRIBED"));
-    await waitFor(() => expect(result.current).toBe("live"));
+    expect(result.current).toBe("live");
   });
 
-  it("transitions to 'polling' on CHANNEL_ERROR or TIMED_OUT", async () => {
+  it("transitions to 'polling' on CHANNEL_ERROR or TIMED_OUT", () => {
     const { result } = renderHook(() =>
       useRealtimeSync({ filters: [{ table: "ideas" }], onChange: vi.fn() })
     );
     act(() => subscribeCb?.("CHANNEL_ERROR"));
-    await waitFor(() => expect(result.current).toBe("polling"));
+    expect(result.current).toBe("polling");
   });
 
   it("invokes onChange immediately on mount, then on each poll tick", async () => {
