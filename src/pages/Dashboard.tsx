@@ -85,6 +85,7 @@ const Dashboard = () => {
     onChange: fetchStats,
     pollIntervalMs: 30000,
   });
+  useSyncStatusToast(syncStatus, "Dashboard sync");
 
   const quickLinks = [
     { title: "Notes Hub", href: "/notes", icon: BookOpen, desc: "Study materials", color: "text-primary" },
