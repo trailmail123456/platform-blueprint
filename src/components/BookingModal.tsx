@@ -8,94 +8,80 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { generateICS, downloadICS } from "@/lib/icsGenerator";
-import {
-  CreditCard,
-  Video,
-  Calendar,
-  FileText,
-  CheckCircle2,
-  Copy,
-  Download,
-} from "lucide-react";
-import type { Mentor } from "@/lib/mockMentorData";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { CreditCard, Video, Calendar, FileText, CheckCircle2, Copy, Download, Loader2 } from "lucide-react";
+import type { MentorRow, AvailabilitySlot } from "@/hooks/useMentors";
 
 interface BookingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mentor: Mentor | null;
-  selectedDate: Date | undefined;
-  selectedTime: string | null;
+  mentor: MentorRow | null;
+  slot: AvailabilitySlot | null;
 }
 
-export const BookingModal = ({
-  open,
-  onOpenChange,
-  mentor,
-  selectedDate,
-  selectedTime,
-}: BookingModalProps) => {
+export const BookingModal = ({ open, onOpenChange, mentor, slot }: BookingModalProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [step, setStep] = useState<"payment" | "confirmed">("payment");
   const [cardNumber, setCardNumber] = useState("");
   const [sessionNotes, setSessionNotes] = useState("");
   const [videoLink, setVideoLink] = useState("");
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handlePayment = () => {
-    // Simulate payment processing
-    if (!cardNumber || cardNumber.length < 16) {
-      toast({
-        title: "Invalid Card",
-        description: "Please enter a valid card number",
-        variant: "destructive",
-      });
+  const handlePayment = async () => {
+    if (!user) {
+      toast({ title: "Sign in required", description: "Please sign in to book a session", variant: "destructive" });
       return;
     }
-
-    // Generate video call link (simulated)
-    const meetingId = Math.random().toString(36).substring(7);
-    const generatedLink = `https://meet.platform.com/${meetingId}`;
-    setVideoLink(generatedLink);
-
-    setStep("confirmed");
-    toast({
-      title: "Booking Confirmed!",
-      description: "Payment processed successfully. Check your email for details.",
+    if (!mentor || !slot) return;
+    if (cardNumber.length < 16) {
+      toast({ title: "Invalid card", description: "Enter a valid 16-digit card number", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    const { data, error } = await supabase.rpc("book_mentor_slot", {
+      _slot_id: slot.id,
+      _duration: 60,
+      _price: mentor.price_per_hour,
+      _notes: sessionNotes || null,
     });
+    setSubmitting(false);
+    if (error) {
+      toast({ title: "Booking failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    const newBookingId = data as unknown as string;
+    setBookingId(newBookingId);
+    const { data: booking } = await supabase
+      .from("mentor_bookings")
+      .select("video_link")
+      .eq("id", newBookingId)
+      .single();
+    setVideoLink(booking?.video_link || "");
+    setStep("confirmed");
+    toast({ title: "Booking confirmed!", description: "Your mentor session is scheduled." });
   };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(videoLink);
-    toast({
-      title: "Copied!",
-      description: "Video call link copied to clipboard",
-    });
+    toast({ title: "Copied", description: "Video link copied to clipboard" });
   };
 
   const handleDownloadCalendar = () => {
-    if (!mentor || !selectedDate || !selectedTime) return;
-
-    const [hours] = selectedTime.split(":");
-    const startTime = new Date(selectedDate);
-    startTime.setHours(parseInt(hours), 0, 0, 0);
-
-    const endTime = new Date(startTime);
-    endTime.setHours(endTime.getHours() + 1);
-
-    const icsContent = generateICS({
-      title: `Mentorship Session with ${mentor.name}`,
-      description: `${mentor.title} at ${mentor.company}\\n\\nTopics: ${mentor.expertise.join(", ")}\\n\\n${sessionNotes || "1-on-1 mentorship session"}`,
-      location: "Virtual Meeting",
-      startTime,
-      endTime,
+    if (!mentor || !slot) return;
+    const start = new Date(slot.starts_at);
+    const end = new Date(slot.ends_at);
+    const ics = generateICS({
+      title: `Mentorship with ${mentor.profile?.full_name || mentor.profile?.username || mentor.title}`,
+      description: `${mentor.title}${mentor.company ? ` at ${mentor.company}` : ""}\n\n${sessionNotes || "1-on-1 mentorship session"}`,
+      location: "Virtual",
+      startTime: start,
+      endTime: end,
       url: videoLink,
     });
-
-    downloadICS(icsContent, `mentorship-${mentor.name.replace(/\s+/g, "-")}.ics`);
-
-    toast({
-      title: "Calendar Invite Downloaded",
-      description: "Add this event to your calendar app",
-    });
+    downloadICS(ics, `mentorship-${start.toISOString().slice(0, 10)}.ics`);
   };
 
   const handleClose = () => {
@@ -103,200 +89,74 @@ export const BookingModal = ({
     setCardNumber("");
     setSessionNotes("");
     setVideoLink("");
+    setBookingId(null);
     onOpenChange(false);
   };
 
-  if (!mentor) return null;
-
-  const totalAmount = mentor.pricePerHour;
+  if (!mentor || !slot) return null;
+  const total = mentor.price_per_hour;
+  const start = new Date(slot.starts_at);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">
-            {step === "payment" ? "Complete Booking" : "Booking Confirmed"}
-          </DialogTitle>
+          <DialogTitle className="text-2xl">{step === "payment" ? "Complete Booking" : "Booking Confirmed"}</DialogTitle>
         </DialogHeader>
 
         {step === "payment" ? (
           <div className="space-y-6 py-4">
-            {/* Session Details */}
-            <div className="rounded-lg border bg-muted/50 p-4">
-              <h3 className="font-semibold mb-3">Session Details</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Mentor</span>
-                  <span className="font-medium">{mentor.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Date</span>
-                  <span className="font-medium">
-                    {selectedDate?.toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Time</span>
-                  <span className="font-medium">{selectedTime}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Duration</span>
-                  <span className="font-medium">1 hour</span>
-                </div>
-                <Separator className="my-2" />
-                <div className="flex justify-between text-base font-semibold">
-                  <span>Total</span>
-                  <span>₹{totalAmount}</span>
-                </div>
-              </div>
+            <div className="rounded-lg border bg-muted/50 p-4 space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Mentor</span><span className="font-medium">{mentor.profile?.full_name || mentor.profile?.username || "Mentor"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium">{start.toLocaleDateString()}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Time</span><span className="font-medium">{start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Duration</span><span className="font-medium">60 min</span></div>
+              <Separator className="my-2" />
+              <div className="flex justify-between text-base font-semibold"><span>Total</span><span>₹{total}</span></div>
             </div>
 
-            {/* Session Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Session Notes (Optional)
-              </Label>
-              <Textarea
-                id="notes"
-                placeholder="Add any topics you'd like to discuss or questions you have..."
-                value={sessionNotes}
-                onChange={(e) => setSessionNotes(e.target.value)}
-                rows={3}
-                className="resize-none"
-              />
+              <Label htmlFor="notes" className="flex items-center gap-2"><FileText className="h-4 w-4" />Session Notes (optional)</Label>
+              <Textarea id="notes" placeholder="Topics or questions you'd like to discuss..." value={sessionNotes} onChange={(e) => setSessionNotes(e.target.value.slice(0, 1000))} rows={3} />
             </div>
 
-            {/* Payment Details */}
-            <div className="space-y-4">
-              <Label className="flex items-center gap-2 text-base">
-                <CreditCard className="h-4 w-4" />
-                Payment Details
-              </Label>
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="cardNumber">Card Number</Label>
-                  <Input
-                    id="cardNumber"
-                    placeholder="1234 5678 9012 3456"
-                    value={cardNumber}
-                    onChange={(e) =>
-                      setCardNumber(e.target.value.replace(/\s/g, ""))
-                    }
-                    maxLength={16}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="expiry">Expiry Date</Label>
-                    <Input id="expiry" placeholder="MM/YY" maxLength={5} />
-                  </div>
-                  <div>
-                    <Label htmlFor="cvv">CVV</Label>
-                    <Input id="cvv" placeholder="123" maxLength={3} type="password" />
-                  </div>
-                </div>
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-base"><CreditCard className="h-4 w-4" />Payment</Label>
+              <Input placeholder="1234 5678 9012 3456" value={cardNumber} onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 16))} maxLength={16} />
+              <div className="grid grid-cols-2 gap-3">
+                <Input placeholder="MM/YY" maxLength={5} />
+                <Input placeholder="CVV" type="password" maxLength={3} />
               </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>Secure payment processing with 256-bit encryption</span>
+              <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-green-500" /> Secure 256-bit encryption (demo)</p>
             </div>
           </div>
         ) : (
           <div className="space-y-6 py-4">
-            {/* Success Message */}
             <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-6 text-center">
-              <div className="mx-auto w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Booking Confirmed!</h3>
-              <p className="text-sm text-muted-foreground">
-                Your session with {mentor.name} has been scheduled
-              </p>
+              <div className="mx-auto w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mb-3"><CheckCircle2 className="h-6 w-6 text-green-500" /></div>
+              <h3 className="font-semibold mb-1">Booking confirmed!</h3>
+              <p className="text-sm text-muted-foreground">Tracked in your dashboard.</p>
             </div>
-
-            {/* Video Call Link */}
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2">
-                <Video className="h-4 w-4 text-primary" />
-                Video Call Link
-              </Label>
-              <div className="flex gap-2">
-                <Input value={videoLink} readOnly className="font-mono text-sm" />
-                <Button variant="outline" size="icon" onClick={handleCopyLink}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                This link will be active 10 minutes before your session
-              </p>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2"><Video className="h-4 w-4 text-primary" />Video link</Label>
+              <div className="flex gap-2"><Input value={videoLink} readOnly className="font-mono text-sm" /><Button variant="outline" size="icon" onClick={handleCopyLink}><Copy className="h-4 w-4" /></Button></div>
             </div>
-
-            {/* Session Notes */}
-            {sessionNotes && (
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Your Notes
-                </Label>
-                <div className="rounded-lg border bg-muted/50 p-4">
-                  <p className="text-sm whitespace-pre-wrap">{sessionNotes}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Calendar Download */}
-            <Button
-              onClick={handleDownloadCalendar}
-              variant="outline"
-              className="w-full"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Add to Calendar (.ics)
-            </Button>
-
-            {/* Session Details */}
-            <div className="rounded-lg border p-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Date & Time</span>
-                <span className="font-medium">
-                  {selectedDate?.toLocaleDateString()} at {selectedTime}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Duration</span>
-                <span className="font-medium">1 hour</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Amount Paid</span>
-                <span className="font-medium">₹{totalAmount}</span>
-              </div>
-            </div>
-
-            <Badge variant="secondary" className="w-full justify-center py-2">
-              <Calendar className="mr-2 h-3 w-3" />
-              Confirmation email sent to your inbox
-            </Badge>
+            <Button onClick={handleDownloadCalendar} variant="outline" className="w-full"><Download className="mr-2 h-4 w-4" />Add to Calendar</Button>
+            <Badge variant="secondary" className="w-full justify-center py-2"><Calendar className="mr-2 h-3 w-3" />Your booking syncs live to the dashboard</Badge>
           </div>
         )}
 
         <DialogFooter>
           {step === "payment" ? (
             <>
-              <Button variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button onClick={handlePayment} className="gap-2">
-                <CreditCard className="h-4 w-4" />
-                Pay ₹{totalAmount}
+              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button onClick={handlePayment} disabled={submitting} className="gap-2">
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                Pay ₹{total}
               </Button>
             </>
           ) : (
-            <Button onClick={handleClose} className="w-full">
-              Done
-            </Button>
+            <Button onClick={handleClose} className="w-full">Done</Button>
           )}
         </DialogFooter>
       </DialogContent>
