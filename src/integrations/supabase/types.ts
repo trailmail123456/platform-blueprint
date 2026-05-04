@@ -43,6 +43,35 @@ export type Database = {
           },
         ]
       }
+      ama_question_votes: {
+        Row: {
+          created_at: string
+          id: string
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ama_question_votes_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "ama_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ama_questions: {
         Row: {
           answer: string | null
@@ -678,6 +707,292 @@ export type Database = {
           },
         ]
       }
+      learning_session_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "learning_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_sessions: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          host_id: string
+          id: string
+          max_participants: number
+          participant_count: number
+          price: number
+          recording_url: string | null
+          scheduled_at: string
+          session_type: string
+          status: string
+          title: string
+          topic: string | null
+          updated_at: string
+          video_link: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          host_id: string
+          id?: string
+          max_participants?: number
+          participant_count?: number
+          price?: number
+          recording_url?: string | null
+          scheduled_at: string
+          session_type?: string
+          status?: string
+          title: string
+          topic?: string | null
+          updated_at?: string
+          video_link?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          host_id?: string
+          id?: string
+          max_participants?: number
+          participant_count?: number
+          price?: number
+          recording_url?: string | null
+          scheduled_at?: string
+          session_type?: string
+          status?: string
+          title?: string
+          topic?: string | null
+          updated_at?: string
+          video_link?: string | null
+        }
+        Relationships: []
+      }
+      mentor_availability: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          ends_at: string
+          id: string
+          is_booked: boolean
+          mentor_id: string
+          starts_at: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          ends_at: string
+          id?: string
+          is_booked?: boolean
+          mentor_id: string
+          starts_at: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          ends_at?: string
+          id?: string
+          is_booked?: boolean
+          mentor_id?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_availability_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_bookings: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          mentee_id: string
+          mentor_id: string
+          notes: string | null
+          price_paid: number
+          scheduled_at: string
+          slot_id: string | null
+          status: string
+          updated_at: string
+          video_link: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          mentee_id: string
+          mentor_id: string
+          notes?: string | null
+          price_paid?: number
+          scheduled_at: string
+          slot_id?: string | null
+          status?: string
+          updated_at?: string
+          video_link?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          mentee_id?: string
+          mentor_id?: string
+          notes?: string | null
+          price_paid?: number
+          scheduled_at?: string
+          slot_id?: string | null
+          status?: string
+          updated_at?: string
+          video_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_bookings_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_bookings_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_availability"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_profiles: {
+        Row: {
+          availability_text: string | null
+          bio: string | null
+          company: string | null
+          created_at: string
+          expertise: string[]
+          id: string
+          is_active: boolean
+          languages: string[]
+          price_per_hour: number
+          rating: number
+          reviews_count: number
+          sessions_count: number
+          title: string
+          updated_at: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          availability_text?: string | null
+          bio?: string | null
+          company?: string | null
+          created_at?: string
+          expertise?: string[]
+          id?: string
+          is_active?: boolean
+          languages?: string[]
+          price_per_hour?: number
+          rating?: number
+          reviews_count?: number
+          sessions_count?: number
+          title: string
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          availability_text?: string | null
+          bio?: string | null
+          company?: string | null
+          created_at?: string
+          expertise?: string[]
+          id?: string
+          is_active?: boolean
+          languages?: string[]
+          price_per_hour?: number
+          rating?: number
+          reviews_count?: number
+          sessions_count?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      mentor_reviews: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          mentee_id: string
+          mentor_id: string
+          rating: number
+          review_text: string | null
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          mentee_id: string
+          mentor_id: string
+          rating: number
+          review_text?: string | null
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          mentee_id?: string
+          mentor_id?: string
+          rating?: number
+          review_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "mentor_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_reviews_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       note_ai_content: {
         Row: {
           flashcards: Json | null
@@ -1279,6 +1594,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      book_mentor_slot: {
+        Args: {
+          _duration?: number
+          _notes?: string
+          _price?: number
+          _slot_id: string
+        }
+        Returns: string
+      }
+      cancel_learning_session_rsvp: {
+        Args: { _session_id: string }
+        Returns: undefined
+      }
+      cancel_mentor_booking: {
+        Args: { _booking_id: string }
+        Returns: undefined
+      }
       compute_note_quality_score: {
         Args: { _note_id: string }
         Returns: number
@@ -1303,6 +1635,16 @@ export type Database = {
         Returns: undefined
       }
       increment_note_views: { Args: { _note_id: string }; Returns: undefined }
+      join_ama_session: { Args: { _session_id: string }; Returns: undefined }
+      leave_ama_session: { Args: { _session_id: string }; Returns: undefined }
+      rsvp_learning_session: {
+        Args: { _session_id: string }
+        Returns: undefined
+      }
+      toggle_ama_question_vote: {
+        Args: { _question_id: string }
+        Returns: Json
+      }
       toggle_comment_vote: {
         Args: { _comment_id: string; _user_id: string; _vote_type: string }
         Returns: Json
