@@ -494,6 +494,87 @@ export type Database = {
           },
         ]
       }
+      community_post_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      community_post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      community_posts: {
+        Row: {
+          comment_count: number
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          like_count: number
+          tags: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_count?: number
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          like_count?: number
+          tags?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_count?: number
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          like_count?: number
+          tags?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       feedback_circle_members: {
         Row: {
           circle_id: string
@@ -562,6 +643,111 @@ export type Database = {
           topic?: string
           updated_at?: string
           week_number?: number
+        }
+        Relationships: []
+      }
+      forum_replies: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          like_count: number
+          parent_id: string | null
+          thread_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          like_count?: number
+          parent_id?: string | null
+          thread_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          like_count?: number
+          parent_id?: string | null
+          thread_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      forum_thread_likes: {
+        Row: {
+          created_at: string
+          id: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      forum_threads: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          id: string
+          is_locked: boolean
+          is_pinned: boolean
+          last_activity_at: string
+          like_count: number
+          reply_count: number
+          tags: string[]
+          title: string
+          updated_at: string
+          user_id: string
+          view_count: number
+        }
+        Insert: {
+          body: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_locked?: boolean
+          is_pinned?: boolean
+          last_activity_at?: string
+          like_count?: number
+          reply_count?: number
+          tags?: string[]
+          title: string
+          updated_at?: string
+          user_id: string
+          view_count?: number
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_locked?: boolean
+          is_pinned?: boolean
+          last_activity_at?: string
+          like_count?: number
+          reply_count?: number
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          user_id?: string
+          view_count?: number
         }
         Relationships: []
       }
@@ -1290,6 +1476,129 @@ export type Database = {
         }
         Relationships: []
       }
+      qa_answer_votes: {
+        Row: {
+          answer_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          answer_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          answer_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qa_answers: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_accepted: boolean
+          question_id: string
+          updated_at: string
+          upvotes: number
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          is_accepted?: boolean
+          question_id: string
+          updated_at?: string
+          upvotes?: number
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_accepted?: boolean
+          question_id?: string
+          updated_at?: string
+          upvotes?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qa_question_votes: {
+        Row: {
+          created_at: string
+          id: string
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qa_questions: {
+        Row: {
+          answer_count: number
+          body: string
+          category: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          is_resolved: boolean
+          tags: string[]
+          title: string
+          updated_at: string
+          upvotes: number
+          user_id: string
+          view_count: number
+        }
+        Insert: {
+          answer_count?: number
+          body: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          is_resolved?: boolean
+          tags?: string[]
+          title: string
+          updated_at?: string
+          upvotes?: number
+          user_id: string
+          view_count?: number
+        }
+        Update: {
+          answer_count?: number
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          is_resolved?: boolean
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          upvotes?: number
+          user_id?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           admin_note: string | null
@@ -1629,12 +1938,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_forum_thread_views: {
+        Args: { _thread_id: string }
+        Returns: undefined
+      }
       increment_idea_upvotes: { Args: { _idea_id: string }; Returns: undefined }
       increment_note_downloads: {
         Args: { _note_id: string }
         Returns: undefined
       }
       increment_note_views: { Args: { _note_id: string }; Returns: undefined }
+      increment_qa_question_views: {
+        Args: { _question_id: string }
+        Returns: undefined
+      }
       join_ama_session: { Args: { _session_id: string }; Returns: undefined }
       leave_ama_session: { Args: { _session_id: string }; Returns: undefined }
       rsvp_learning_session: {
@@ -1649,6 +1966,10 @@ export type Database = {
         Args: { _comment_id: string; _user_id: string; _vote_type: string }
         Returns: Json
       }
+      toggle_community_post_like: { Args: { _post_id: string }; Returns: Json }
+      toggle_forum_thread_like: { Args: { _thread_id: string }; Returns: Json }
+      toggle_qa_answer_vote: { Args: { _answer_id: string }; Returns: Json }
+      toggle_qa_question_vote: { Args: { _question_id: string }; Returns: Json }
     }
     Enums: {
       app_role:
