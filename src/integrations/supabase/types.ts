@@ -361,6 +361,51 @@ export type Database = {
           },
         ]
       }
+      cheat_sheets: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          downloads: number
+          file_url: string | null
+          format: string
+          id: string
+          is_public: boolean
+          pages: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          downloads?: number
+          file_url?: string | null
+          format?: string
+          id?: string
+          is_public?: boolean
+          pages?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          downloads?: number
+          file_url?: string | null
+          format?: string
+          id?: string
+          is_public?: boolean
+          pages?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       circle_feedback: {
         Row: {
           circle_id: string
@@ -643,6 +688,102 @@ export type Database = {
           topic?: string
           updated_at?: string
           week_number?: number
+        }
+        Relationships: []
+      }
+      flashcard_decks: {
+        Row: {
+          card_count: number
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          study_count: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_count?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          study_count?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_count?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          study_count?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      flashcard_reviews: {
+        Row: {
+          card_id: string
+          ease: number
+          id: string
+          next_review_at: string
+          reviewed_at: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          ease?: number
+          id?: string
+          next_review_at?: string
+          reviewed_at?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          ease?: number
+          id?: string
+          next_review_at?: string
+          reviewed_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      flashcards: {
+        Row: {
+          back: string
+          created_at: string
+          deck_id: string
+          front: string
+          hint: string | null
+          id: string
+          position: number
+        }
+        Insert: {
+          back: string
+          created_at?: string
+          deck_id: string
+          front: string
+          hint?: string | null
+          id?: string
+          position?: number
+        }
+        Update: {
+          back?: string
+          created_at?: string
+          deck_id?: string
+          front?: string
+          hint?: string | null
+          id?: string
+          position?: number
         }
         Relationships: []
       }
@@ -1599,6 +1740,117 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_attempts: {
+        Row: {
+          answers: Json
+          completed_at: string
+          id: string
+          quiz_id: string
+          score: number
+          time_taken_seconds: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string
+          id?: string
+          quiz_id: string
+          score?: number
+          time_taken_seconds?: number
+          total?: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string
+          id?: string
+          quiz_id?: string
+          score?: number
+          time_taken_seconds?: number
+          total?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quiz_questions: {
+        Row: {
+          correct_index: number
+          created_at: string
+          explanation: string | null
+          id: string
+          options: Json
+          position: number
+          question: string
+          quiz_id: string
+        }
+        Insert: {
+          correct_index?: number
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          options?: Json
+          position?: number
+          question: string
+          quiz_id: string
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          options?: Json
+          position?: number
+          question?: string
+          quiz_id?: string
+        }
+        Relationships: []
+      }
+      quizzes: {
+        Row: {
+          attempts_count: number
+          category: string
+          created_at: string
+          description: string | null
+          difficulty: string
+          duration_minutes: number
+          id: string
+          is_public: boolean
+          question_count: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts_count?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          difficulty?: string
+          duration_minutes?: number
+          id?: string
+          is_public?: boolean
+          question_count?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts_count?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          difficulty?: string
+          duration_minutes?: number
+          id?: string
+          is_public?: boolean
+          question_count?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           admin_note: string | null
@@ -1632,6 +1884,108 @@ export type Database = {
           reported_by?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      roadmap_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string
+          id: string
+          roadmap_id: string
+          step_id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string
+          id?: string
+          roadmap_id: string
+          step_id: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string
+          id?: string
+          roadmap_id?: string
+          step_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      roadmap_steps: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          position: number
+          resources: Json
+          roadmap_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          position?: number
+          resources?: Json
+          roadmap_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          position?: number
+          resources?: Json
+          roadmap_id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      roadmaps: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          difficulty: string
+          duration: string | null
+          id: string
+          is_public: boolean
+          step_count: number
+          title: string
+          topics: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          difficulty?: string
+          duration?: string | null
+          id?: string
+          is_public?: boolean
+          step_count?: number
+          title: string
+          topics?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          difficulty?: string
+          duration?: string | null
+          id?: string
+          is_public?: boolean
+          step_count?: number
+          title?: string
+          topics?: string[]
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1912,6 +2266,7 @@ export type Database = {
         }
         Returns: string
       }
+      bump_cheatsheet_downloads: { Args: { _id: string }; Returns: undefined }
       cancel_learning_session_rsvp: {
         Args: { _session_id: string }
         Returns: undefined
@@ -1954,6 +2309,16 @@ export type Database = {
       }
       join_ama_session: { Args: { _session_id: string }; Returns: undefined }
       leave_ama_session: { Args: { _session_id: string }; Returns: undefined }
+      record_quiz_attempt: {
+        Args: {
+          _answers: Json
+          _quiz_id: string
+          _score: number
+          _time_seconds: number
+          _total: number
+        }
+        Returns: string
+      }
       rsvp_learning_session: {
         Args: { _session_id: string }
         Returns: undefined
@@ -1970,6 +2335,10 @@ export type Database = {
       toggle_forum_thread_like: { Args: { _thread_id: string }; Returns: Json }
       toggle_qa_answer_vote: { Args: { _answer_id: string }; Returns: Json }
       toggle_qa_question_vote: { Args: { _question_id: string }; Returns: Json }
+      toggle_roadmap_step: {
+        Args: { _roadmap_id: string; _step_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role:
