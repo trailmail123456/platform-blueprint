@@ -620,6 +620,101 @@ export type Database = {
         }
         Relationships: []
       }
+      event_registrations: {
+        Row: {
+          event_id: string
+          id: string
+          registered_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          registered_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          registered_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          banner_url: string | null
+          capacity: number
+          created_at: string
+          description: string
+          ends_at: string | null
+          featured: boolean
+          id: string
+          mode: string
+          organizer_id: string
+          prize: string | null
+          registration_count: number
+          registration_deadline: string | null
+          starts_at: string
+          status: string
+          tags: string[]
+          title: string
+          type: string
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          capacity?: number
+          created_at?: string
+          description?: string
+          ends_at?: string | null
+          featured?: boolean
+          id?: string
+          mode?: string
+          organizer_id: string
+          prize?: string | null
+          registration_count?: number
+          registration_deadline?: string | null
+          starts_at: string
+          status?: string
+          tags?: string[]
+          title: string
+          type?: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          capacity?: number
+          created_at?: string
+          description?: string
+          ends_at?: string | null
+          featured?: boolean
+          id?: string
+          mode?: string
+          organizer_id?: string
+          prize?: string | null
+          registration_count?: number
+          registration_deadline?: string | null
+          starts_at?: string
+          status?: string
+          tags?: string[]
+          title?: string
+          type?: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
       feedback_circle_members: {
         Row: {
           circle_id: string
@@ -2018,6 +2113,156 @@ export type Database = {
           },
         ]
       }
+      study_group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_group_messages: {
+        Row: {
+          content: string
+          created_at: string
+          group_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          group_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_group_rooms: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          group_id: string
+          id: string
+          is_active: boolean
+          meeting_link: string | null
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          group_id: string
+          id?: string
+          is_active?: boolean
+          meeting_link?: string | null
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          group_id?: string
+          id?: string
+          is_active?: boolean
+          meeting_link?: string | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_rooms_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_groups: {
+        Row: {
+          active_room_count: number
+          banner_url: string | null
+          category: string | null
+          created_at: string
+          description: string
+          id: string
+          member_count: number
+          member_limit: number
+          name: string
+          owner_id: string
+          privacy: string
+          updated_at: string
+        }
+        Insert: {
+          active_room_count?: number
+          banner_url?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          member_count?: number
+          member_limit?: number
+          name: string
+          owner_id: string
+          privacy?: string
+          updated_at?: string
+        }
+        Update: {
+          active_room_count?: number
+          banner_url?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          member_count?: number
+          member_limit?: number
+          name?: string
+          owner_id?: string
+          privacy?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       study_sessions: {
         Row: {
           created_at: string
@@ -2252,6 +2497,86 @@ export type Database = {
         }
         Relationships: []
       }
+      virtual_classroom_participants: {
+        Row: {
+          classroom_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          classroom_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          classroom_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "virtual_classroom_participants_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_classrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      virtual_classrooms: {
+        Row: {
+          created_at: string
+          description: string
+          duration_minutes: number
+          host_id: string
+          id: string
+          max_participants: number
+          meeting_link: string | null
+          participant_count: number
+          recording_url: string | null
+          scheduled_at: string
+          status: string
+          subject: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          duration_minutes?: number
+          host_id: string
+          id?: string
+          max_participants?: number
+          meeting_link?: string | null
+          participant_count?: number
+          recording_url?: string | null
+          scheduled_at: string
+          status?: string
+          subject?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          duration_minutes?: number
+          host_id?: string
+          id?: string
+          max_participants?: number
+          meeting_link?: string | null
+          participant_count?: number
+          recording_url?: string | null
+          scheduled_at?: string
+          status?: string
+          subject?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -2267,6 +2592,10 @@ export type Database = {
         Returns: string
       }
       bump_cheatsheet_downloads: { Args: { _id: string }; Returns: undefined }
+      cancel_event_registration: {
+        Args: { _event_id: string }
+        Returns: undefined
+      }
       cancel_learning_session_rsvp: {
         Args: { _session_id: string }
         Returns: undefined
@@ -2307,8 +2636,22 @@ export type Database = {
         Args: { _question_id: string }
         Returns: undefined
       }
+      is_study_group_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       join_ama_session: { Args: { _session_id: string }; Returns: undefined }
+      join_study_group: { Args: { _group_id: string }; Returns: undefined }
+      join_virtual_classroom: {
+        Args: { _classroom_id: string }
+        Returns: undefined
+      }
       leave_ama_session: { Args: { _session_id: string }; Returns: undefined }
+      leave_study_group: { Args: { _group_id: string }; Returns: undefined }
+      leave_virtual_classroom: {
+        Args: { _classroom_id: string }
+        Returns: undefined
+      }
       record_quiz_attempt: {
         Args: {
           _answers: Json
@@ -2319,6 +2662,7 @@ export type Database = {
         }
         Returns: string
       }
+      register_for_event: { Args: { _event_id: string }; Returns: string }
       rsvp_learning_session: {
         Args: { _session_id: string }
         Returns: undefined
